@@ -45,7 +45,7 @@ if __name__ == "__main__":
     from time import sleep
 
     bot = DiffDriveController(
-        left_ids=((2, 3, 4), (21, 20)), right_ids=((6, 7, 8), (11, 10))
+        left_ids=((6, 7, 8), (11, 10)), right_ids=((2, 3, 4), (21, 20))
     )
     for v in range(1, 11):
         bot.set_vel(v / 10, 0.0)

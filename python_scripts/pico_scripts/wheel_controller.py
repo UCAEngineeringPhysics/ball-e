@@ -62,15 +62,15 @@ class WheelController(WheelDriver):
 if __name__ == "__main__":
     from time import sleep
 
-    w = WheelController((2, 3, 4), (21, 20))
-    # w = WheelController((6, 7, 8), (11, 10))
+    # w = WheelController((2, 3, 4), (21, 20))  # r
+    w = WheelController((6, 7, 8), (11, 10))  # l
     print(f"target velocity: {w.target_vel}")
     for v in range(1, 11):
-        w.set_lin_vel(v / 10)
+        w.set_lin_vel(-v / 10)
         sleep(1.5)
         print(f"target velocity: {w.target_vel}, actual velocity: {w.lin_vel}")
     for v in reversed(range(10)):
-        w.set_lin_vel(v / 10)
+        w.set_lin_vel(-v / 10)
         sleep(1.5)
         print(f"target velocity: {w.target_vel}, actual velocity: {w.lin_vel}")
     w.set_lin_vel(0)
