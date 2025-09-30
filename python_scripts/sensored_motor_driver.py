@@ -10,7 +10,7 @@ class SensoredMotorDriver(MotorDriver):
         self.encb_pin = Pin(encoder_pin_ids[1], Pin.IN, Pin.PULL_UP)  # white
         self.enca_pin.irq(trigger=Pin.IRQ_RISING, handler=self.update_counts)
         # Variables
-        self.counts = 0
+        self.pulses = 0
         # Properties
         self.AB = ab  # encoder channel order, 1: A rise first, -1: B rise first
         self.PPR = 16  # pulses per revolution, PPR * 4 = CPR
@@ -19,9 +19,9 @@ class SensoredMotorDriver(MotorDriver):
     
     def update_counts(self, pin):
         if self.encb_pin.value() == self.enca_pin.value():  # A channel RISE later than B channel
-            self.counts -= self.AB
+            self.pulses -= self.AB
         else:
-            self.counts += self.AB
+            self.pulses += self.AB
         
 if __name__ == '__main__':
     from time import sleep
@@ -33,8 +33,8 @@ if __name__ == '__main__':
     for d in range(200):  # ramp up
         smd.forward(int(65025 / 200 * d))
         sleep(0.02)
-        pulses_inc = smd.counts - prev_counts
-        prev_counts = smd.counts
+        pulses_inc = smd.pulses - prev_counts
+        prev_counts = smd.pulses
         revs_inc = pulses_inc / smd.PPR
         rads_inc = revs_inc * 2 * pi
         ang_vel_motor = rads_inc / 0.02  # motor angular velocity
@@ -46,8 +46,8 @@ if __name__ == '__main__':
     for d in reversed(range(200)):  # ramp down
         smd.forward(int(65025 / 200 * d))
         sleep(0.02)
-        pulses_inc = smd.counts - prev_counts
-        prev_counts = smd.counts
+        pulses_inc = smd.pulses - prev_counts
+        prev_counts = smd.pulses
         revs_inc = pulses_inc / smd.PPR
         rads_inc = revs_inc * 2 * pi
         ang_vel_motor = rads_inc / 0.02  # motor angular velocity

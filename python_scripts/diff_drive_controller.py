@@ -43,18 +43,17 @@ class DiffDriveController:
 # TEST
 if __name__ == "__main__":
     from time import sleep
-    from math import pi, sin, cos
 
     bot = DiffDriveController(
         left_ids=((2, 3, 4), (21, 20)), right_ids=((6, 7, 8), (11, 10))
     )
-    vel_candidates = range(5)
-    for i in range(10):
-        for j in range(10):
-            tl, ta = sin(i / 10 * 2 * pi), 2 * pi * cos(j / 10 * 2 * pi)
-            bot.set_vel(tl, ta)
-            sleep(0.75)
-            print(
-                f"target vel: {tl} m/s, {ta} rad/s\nactual vel: {bot.lin_vel} m/s, {bot.ang_vel} rad/s\n"
-            )
+    for v in range(1, 11):
+        bot.set_vel(v / 10, 0.0)
+        sleep(1.5)
+        print(f"target velocity: {v/10}, actual velocity: {bot.lin_vel}")
+    for v in reversed(range(10)):
+        bot.set_vel(v / 10, 0.0)
+        sleep(1.5)
+        print(f"target velocity: {v/10}, actual velocity: {bot.lin_vel}")
     bot.set_vel(0.0, 0.0)
+    sleep(1)
