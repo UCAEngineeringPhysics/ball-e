@@ -38,16 +38,18 @@ try:
                         )
                         homer.set_vel(target_lin_vel, target_ang_vel)
                     except ValueError:
-                        # print("ValueError!")  # debug
+                        print("ValueError!")  # debug
                         homer.set_vel(0.0, 0.0)
                 else:
+                    print("Buffer length not 2")
                     homer.set_vel(0.0, 0.0)
             else:
+                print("No message received")
                 homer.set_vel(0.0, 0.0)
 
 except Exception as e:
-    # print('Pico reset')  # debug
+    print('Pico reset')  # debug
     reset()
 finally:
-    # print('Pico reset')  # debug
+    print('Pico reset')  # debug
     reset()
