@@ -9,7 +9,9 @@ class DiffDriveController:
         self.left_wheel = WheelController(*left_ids)
         self.right_wheel = WheelController(*right_ids)
         self.velmon_timer = Timer(
-            mode=Timer.PERIODIC, freq=50, callback=self.monitor_velocity
+            mode=Timer.PERIODIC, 
+            freq=50, 
+            callback=self.monitor_velocity,
         )
         # Properties
         self.WHEEL_SEP = 0.21  # wheel separation distance
@@ -29,9 +31,9 @@ class DiffDriveController:
         self.ang_vel = (
             self.right_wheel.lin_vel - self.left_wheel.lin_vel
         ) / self.WHEEL_SEP  # robot's angular velocity
-        sys.stdout.write(
-            f"{self.lin_vel},{self.ang_vel}\n"
-        )  # uncomment to transmit robot velocity
+        # sys.stdout.write(
+        #     f"{self.lin_vel},{self.ang_vel}\n"
+        # )  # uncomment to transmit robot velocity
 
     def set_vel(self, target_lin_vel, target_ang_vel):
         left_target = target_lin_vel - 0.5 * (target_ang_vel * self.WHEEL_SEP)
