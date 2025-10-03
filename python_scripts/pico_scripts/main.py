@@ -29,12 +29,12 @@ try:
             if msg:
                 wdt.feed()
                 buffer = msg.readline().rstrip().split(",")
+                # print(f"{balle.lin_vel},{balle.ang_vel}")
                 if len(buffer) == 2:
                     try:
                         target_lin_vel = float(buffer[0])
                         target_ang_vel = float(buffer[1])
                         balle.set_vel(target_lin_vel, target_ang_vel)
-                        print(f"{balle.lin_vel},{balle.ang_vel}")
                     except ValueError:
                         balle.set_vel(0.0, 0.0)
                         # print("ValueError!")  # debug
