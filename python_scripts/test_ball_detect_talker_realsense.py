@@ -83,17 +83,15 @@ def app_callback(pad, info, user_data):
             depth = depth_frame.get_distance(px, py)
             string_to_print += f"Depth at ball: {depth:.2f} m\n"
 
-            if depth > 0.4:  # Only move forward if not too close
-                if x_center < 0.3:
-                    msg = "0.3, 1.0\n".encode('utf-8')
-                elif x_center > 0.7:
-                    msg = "0.3, -1.0\n".encode('utf-8')
-                else:
-                    msg = "0.4, 0.0\n".encode('utf-8')
+            if x_center < 0.3:
+                msg = "0.4, 1.0\n".encode('utf-8')
+            elif x_center > 0.7:
+                    msg = "0.4, -1.0\n".encode('utf-8')
             else:
-                msg = "0.0, 0.0\n".encode('utf-8')
-
+                msg = "0.4, 0.0\n".encode('utf-8')
+           
             detection_count += 1
+
 
     # If no ball detected, gradually reduce velocity
     if not ball_detected:
