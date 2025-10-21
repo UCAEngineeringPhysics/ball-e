@@ -93,7 +93,7 @@ def app_callback(pad, info, user_data):
             else:
                 msg = "0.0, 0.0\n".encode('utf-8')
 
-
+            detection_count += 1
 
     # If no ball detected, gradually reduce velocity
     if not ball_detected:
