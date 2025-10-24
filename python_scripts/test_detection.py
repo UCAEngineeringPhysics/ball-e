@@ -35,7 +35,7 @@ def app_callback(pad, info, user_data):
     if buffer is None:
         return Gst.PadProbeReturn.OK
 
-    # Using the user_data to count the number of frames
+    # Using the user_data to count the number of frames/
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
 

@@ -1,3 +1,5 @@
 .vscode/
 .micropico
 .log
+.pyc
+__pycache__/

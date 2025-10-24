@@ -18,7 +18,7 @@ class WheelController(WheelDriver):
         self.duty = 0
         self.set_vel_counter = 0
         # Properties: Incremental PID
-        self.K_P = 16384.0
+        self.K_P = 17600.0
         self.K_I = 0.0
         self.K_D = 0.0
 

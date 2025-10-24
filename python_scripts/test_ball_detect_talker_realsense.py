@@ -67,7 +67,6 @@ def app_callback(pad, info, user_data):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
-# Use RealSense to create bounding box that directs navigation
         if "ball" in label:
             ball_detected = True
 
