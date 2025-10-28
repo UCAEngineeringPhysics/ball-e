@@ -30,26 +30,6 @@ class user_app_callback_class(app_callback_class):
         print(f"Messenger initiated at: {self.messenger.name}\n")
         self.last_bbox_size = 0.0  # store last bounding box area/size
 
-        #initialize servos to resting position
-        #closed position: 
-        # servo_0 = PWM(Pin(15))  #claw
-        # servo_0.freq(50)
-        # servo_0.duty_ns(2300000)
-
-        # servo_1 = PWM(Pin(14))  #arm
-        # servo_1.freq(50)
-        # servo_1.duty_ns(700000)
-
-        #rest position: 
-        servo_0 = PWM(Pin(15))  #claw
-        servo_0.freq(50)
-        servo_0.duty_ns(1800000)
-
-        servo_1 = PWM(Pin(14))  #arm
-        servo_1.freq(50)
-        servo_1.duty_ns(1650000)
-
-    
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
@@ -65,6 +45,9 @@ def app_callback(pad, info, user_data):
     # Using the user_data to count the number of frames
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
+    
+    # Start arm and claw in rest position
+    user_data.messenger.write(b"RELEASE\n")
 
     # Get resolution size
     caps = get_caps_from_pad(pad)
@@ -133,17 +116,7 @@ def app_callback(pad, info, user_data):
 
             # Trigger arm and claw motion if ball is 0.5 ft away from camera (robot stopped)
             if msg == "0.0, 0.0\n".encode('utf-8'): 
-                # Lower arm
-                user_data.servo_1.duty_ns(2300000)
-                sleep(0.5)
-                # Open claw
-                user_data.servo_0.duty_ns(1550000)
-                sleep(0.5)
-                # Close claw
-                user_data.servo_0.duty_ns(2300000)
-                sleep (0.5)
-                # Raise arm
-                user_data.servo_1.duty_ns(1650000)
+                user_data.messenger.write(b"GRAB\n")
 
             detection_count += 1
 
