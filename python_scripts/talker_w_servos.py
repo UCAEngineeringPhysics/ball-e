@@ -48,6 +48,8 @@ class user_app_callback_class(app_callback_class):
         servo_1 = PWM(Pin(14))  #arm
         servo_1.freq(50)
         servo_1.duty_ns(1650000)
+
+    
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
@@ -64,11 +66,19 @@ def app_callback(pad, info, user_data):
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
 
+    # Get resolution size
+    caps = get_caps_from_pad(pad)
+    structure = caps.get_structure(0)
+    frame_width = structure.get_value("width")
+    frame_height = structure.get_value("height")
+
+    user_data.frame_width = structure.get_value("width")
+    user_data.frame_height = structure.get_value("height")
+
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
     # ~ 90 fps resolution for bb size 1280x720
-    FRAME_HEIGHT = 720 
 
     ball_detected = False
     msg = "0.0, 0.0\n".encode('utf-8')
@@ -86,7 +96,7 @@ def app_callback(pad, info, user_data):
             user_data.vel = 0.4
 
             # Bounding box height in pixels
-            h_pixels = (bbox.ymax() - bbox.ymin()) * FRAME_HEIGHT
+            h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
             # focal length in pixels
             f_pixels = 3386.0
             # Height of ball
