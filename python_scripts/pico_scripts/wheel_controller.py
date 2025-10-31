@@ -53,9 +53,8 @@ class WheelController(WheelDriver):
         if target_vel is not self.target_vel:
             self.target_vel = target_vel
             self.acc_err = 0.0
-        else:
-            if not self.set_vel_counter % 30:
-                self.stop()
+            self.set_vel_counter = 0
+
 
 
 # TEST
@@ -74,3 +73,4 @@ if __name__ == "__main__":
         sleep(1.5)
         print(f"target velocity: {w.target_vel}, actual velocity: {w.lin_vel}")
     w.set_lin_vel(0)
+
