@@ -38,5 +38,3 @@ while True:
 #         out_msg = "PICO\n"
         sys.stdout.write(out_msg)
         tic = ticks_us()
-        
-
