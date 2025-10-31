@@ -31,5 +31,3 @@ if __name__ == '__main__':
     md.forward(40000)
     sleep(4)
     md.stop()
-
-
