@@ -94,16 +94,16 @@ def app_callback(pad, info, user_data):
             # string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
             string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
             
-            # Continue at regular speed if ball is more than 1 ft from camera
-            if Z > 0.3: 
+            # Continue at regular speed if ball is ~2 ft from camera
+            if Z > 0.66: 
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                     msg = "0.4, 1.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
                     msg = "0.4, -1.0\n".encode('utf-8')
                 else:
                     msg = "0.4, 0.0\n".encode('utf-8')
-            # Slow down if ball is within 1 ft of camera
-            elif Z < 0.3 and Z > 0.15:
+            # Slow down if ball is within 1.5 ft of camera
+            elif Z < 0.66 and Z > 0.36:
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                     msg = "0.2, 1.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -114,7 +114,7 @@ def app_callback(pad, info, user_data):
             else: 
                     msg = "0.0, 0.0\n".encode('utf-8')
 
-            # Trigger arm and claw motion if ball is 0.5 ft away from camera (robot stopped)
+            # Trigger arm and claw motion if ball is  ft away from camera (robot stopped)
             if msg == "0.0, 0.0\n".encode('utf-8'): 
                 user_data.messenger.write(b"GRAB\n")
 
@@ -142,3 +142,4 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
