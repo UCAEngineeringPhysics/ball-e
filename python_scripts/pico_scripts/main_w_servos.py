@@ -5,7 +5,8 @@ Rename this script to main.py, then upload to the pico board.
 import sys
 import select
 from diff_drive_controller import DiffDriveController
-from machine import WDT, freq, reset, Pin, PWM
+from machine import freq, reset, Pin, PWM
+from utime import ticks_us
 from time import sleep
 
 # SETUP
@@ -17,9 +18,9 @@ balle = DiffDriveController(
 )
 
 # Instantiate servos
-servo_claw = PWM(Pin(15))
+servo_claw = PWM(Pin(12))
 servo_claw.freq(50)
-servo_arm = PWM(Pin(14))
+servo_arm = PWM(Pin(13))
 servo_arm.freq(50)
 
 # Initial "rest" positions
@@ -31,8 +32,8 @@ servo_arm.duty_ns(1650000)   # raised
 cmd_vel_listener = select.poll()
 cmd_vel_listener.register(sys.stdin, select.POLLIN)
 event = cmd_vel_listener.poll()
-# Config watchdog timer
-wdt = WDT(timeout=500)  # ms
+target_lin_vel, target_ang_vel = 0.0, 0.0
+tic = ticks_us()
 
 # Function to grab ball (triggered when ball is detected and within 0.5 ft of robot)
 def grab_sequence():
@@ -58,42 +59,27 @@ def rest_sequence():
 
 
 # LOOP
-try:
-    while True:
-        target_lin_vel, target_ang_vel = 0.0, 0.0
-        for msg, _ in event:
-            if msg:
-                wdt.feed()
-                buffer = msg.readline().rstrip().split(",")
-                # Handle servo commands
-                if buffer == b"GRAB":
-                    grab_sequence()
-                    continue
-                elif buffer == b"RELEASE":
-                    rest_sequence()
-                    continue
 
-                # Otherwise handle velocity
-                buffer = buffer.split(",")
+while True:
+    for msg, _ in event:
+        buffer = msg.readline().strip().split(",")
 
-                # print(f"{balle.lin_vel},{balle.ang_vel}")
-                if len(buffer) == 2:
-                    try:
-                        target_lin_vel = float(buffer[0])
-                        target_ang_vel = float(buffer[1])
-                        balle.set_vel(target_lin_vel, target_ang_vel)
-                    except ValueError:
-                        balle.set_vel(0.0, 0.0)
-                        # print("ValueError!")  # debug
-                        # reset()
-            else:
-                # print("No message received")  # debug
-                balle.set_vel(0.0, 0.0)
-                # reset()
+        if len(buffer) == 2:
+            target_lin_vel = float(buffer[0])
+            target_ang_vel = float(buffer[1])
+            balle.set_vel(target_lin_vel, target_ang_vel)
 
-except Exception as e:
-    # print('Pico reset')  # debug
-    reset()
-finally:
-    # print('Pico reset')  # debug
-    reset()
+        # Handle servo commands
+        if buffer == b"GRAB":
+            grab_sequence()
+            continue
+        elif buffer == b"RELEASE":
+            rest_sequence()
+            
+    toc = ticks_us()
+    if toc - tic >= 10000:
+        meas_lin_vel, meas_ang_vel = balle.get_vel()
+        out_msg = f"{meas_lin_vel}, {meas_ang_vel}\n"
+#         out_msg = "PICO\n"
+        sys.stdout.write(out_msg)
+        tic = ticks_us()
