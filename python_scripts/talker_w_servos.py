@@ -30,6 +30,8 @@ class user_app_callback_class(app_callback_class):
         self.last_bbox_size = 0.0  # store last bounding box area/size
         # Shared variable for latest message
         self.latest_msg = "0.0, 0.0\n".encode('utf-8')
+        # self.latest_msg = "grab\n".encode('utf-8')
+        self.work_mode = "base"  # other option: "arm"
 
         # Start Pico update thread
         self.pico_thread = threading.Thread(target=self.send_msg, daemon=True)
@@ -82,6 +84,14 @@ def app_callback(pad, info, user_data):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
+        if user_data.mode is "arm":
+            # send_arm_moving_message_to_pico()
+            pass
+        else:
+            # send base moving message to pico
+            pass
+
+
         if "ball" in label:
             # Get track ID
             ball_detected = True
@@ -131,7 +141,6 @@ def app_callback(pad, info, user_data):
 
             break
 
-            break
 
 
         # If no ball detected, gradually reduce velocity
