@@ -62,19 +62,17 @@ def rest_sequence():
 
 while True:
     for msg, _ in event:
-        buffer = msg.readline().strip().split(",")
-
-        if len(buffer) == 2:
-            target_lin_vel = float(buffer[0])
-            target_ang_vel = float(buffer[1])
-            balle.set_vel(target_lin_vel, target_ang_vel)
-
         # Handle servo commands
         if buffer == b"GRAB":
             grab_sequence()
             continue
         elif buffer == b"RELEASE":
             rest_sequence()
+        buffer = msg.readline().strip().split(",")
+        if len(buffer) == 2:
+            target_lin_vel = float(buffer[0])
+            target_ang_vel = float(buffer[1])
+            balle.set_vel(target_lin_vel, target_ang_vel)
             
     toc = ticks_us()
     if toc - tic >= 10000:
@@ -83,3 +81,4 @@ while True:
 #         out_msg = "PICO\n"
         sys.stdout.write(out_msg)
         tic = ticks_us()
+
