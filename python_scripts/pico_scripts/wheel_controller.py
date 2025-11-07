@@ -73,4 +73,3 @@ if __name__ == "__main__":
         sleep(1.5)
         print(f"target velocity: {w.target_vel}, actual velocity: {w.lin_vel}")
     w.set_lin_vel(0)
-

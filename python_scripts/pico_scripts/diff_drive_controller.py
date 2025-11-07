@@ -52,4 +52,3 @@ if __name__ == "__main__":
         print(f"target velocity: {v/10}, actual velocity: {bot.get_vel()}")
     bot.set_vel(0.0, 0.0)
     sleep(1)
-
