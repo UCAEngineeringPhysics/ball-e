@@ -85,7 +85,7 @@ def app_callback(pad, info, user_data):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
-        if "ball" in label:
+        if "ball" in label or "frisbee" in label:
             # Get bounding box height in pixels
             h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
             # focal length in pixels
@@ -159,5 +159,6 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
 
 
