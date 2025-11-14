@@ -60,6 +60,15 @@ def app_callback(pad, info, user_data):
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
 
+    # Get resolution size
+    caps = get_caps_from_pad(pad)
+    structure = caps.get_structure(0)
+    frame_width = structure.get_value("width")
+    frame_height = structure.get_value("height")
+
+    user_data.frame_width = structure.get_value("width")
+    user_data.frame_height = structure.get_value("height")
+
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
@@ -146,3 +155,4 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
