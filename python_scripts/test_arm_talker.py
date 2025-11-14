@@ -107,7 +107,7 @@ def app_callback(pad, info, user_data):
             # Drive robot until small distance from ball
             #-------------------------------------------------------------------
             # Continue at regular speed if ball is more than 1 ft from camera
-            if Z > 0.3:   
+            if Z > 0.6:   
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                     user_data.latest_msg = "0.4, 1.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -115,8 +115,8 @@ def app_callback(pad, info, user_data):
                 else:
                     user_data.latest_msg = "0.4, 0.0\n".encode('utf-8')
                     
-            # Slow down if ball is within 1 ft of camera
-            elif Z < 0.3 and Z > 0.15:       
+            # Slow down if ball is within 2 ft of camera
+            elif Z < 0.6 and Z > 0.36:       
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                     user_data.latest_msg = "0.2, 1.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -124,7 +124,7 @@ def app_callback(pad, info, user_data):
                 else:
                     user_data.latest_msg = "0.2, 0.0\n".encode('utf-8')
                     
-            # Stop if ball is within 0.5 ft away from camera and trigger arm motion
+            # Stop if ball is within 0.36 m away from camera and trigger arm motion
             else: 
                     user_data.latest_msg = "0.0, 0.0\n".encode('utf-8')
                     #pause
@@ -142,9 +142,9 @@ def app_callback(pad, info, user_data):
             break
 
         # If no ball detected, gradually reduce velocity
-        else:
-            user_data.vel = max(user_data.vel - 0.05, 0.0)
-            user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
+    if detection_count == 0:
+        user_data.vel = max(user_data.vel - 0.05, 0.0)
+        user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
 
     string_to_print += (f"Target velocity: {user_data.latest_msg}")
     print(string_to_print)
@@ -159,3 +159,4 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
