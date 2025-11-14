@@ -33,6 +33,9 @@ class user_app_callback_class(app_callback_class):
         self.pico_thread.start()
         self.vel =0
 
+        # Initialize start time and state for arm motion
+        self.arm_state = "idle"
+        self.arm_state_start = time.time()
         
     def send_msg(self):
         """Continuously send the latest message to the Pico."""
@@ -44,6 +47,39 @@ class user_app_callback_class(app_callback_class):
             self.messenger.write(self.latest_msg)
             sleep(0.02)
 
+    def update_arm_state(self):
+        now = time.time()
+    
+        # --- IDLE ---
+        if self.arm_state == "idle":
+            return
+    
+        # --- Lower arm & open claw ---
+        if self.arm_state == "lower_and_open":
+            if now - self.arm_state_start < 0.7:
+                self.latest_msg = "0.0, 0.0, -1.0\n".encode('utf-8')
+            else:
+                self.arm_state = "close_claw"
+                self.arm_state_start = now
+            return
+    
+        # --- Close claw ---
+        if self.arm_state == "close_claw":
+            if now - self.arm_state_start < 0.7:
+                self.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
+            else:
+                self.arm_state = "raise_arm"
+                self.arm_state_start = now
+            return
+    
+        # --- Raise arm ---
+        if self.arm_state == "raise_arm":
+            if now - self.arm_state_start < 0.7:
+                self.latest_msg = "0.0, 0.0, 1.0\n".encode('utf-8')
+            else:
+                self.arm_state = "done"
+                self.arm_state_start = now
+            return
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
@@ -82,7 +118,7 @@ def app_callback(pad, info, user_data):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
-        if "ball" in label or "frisbee" in label:
+        if "ball" in label:
             # Get bounding box height in pixels
             h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
             # focal length in pixels
@@ -121,31 +157,29 @@ def app_callback(pad, info, user_data):
                 else:
                     user_data.latest_msg = "0.2, 0.0, 0.0\n".encode('utf-8')
                     
-            # Stop if ball is within 1.2 m (4 ft) away from camera and trigger arm motion
-            else: 
-                    user_data.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
-                    #pause
-                    #lower arm and open claw
-                    #user_data.latest_msg = "0.0, 0.0, -1.0\n".encode('utf-8')
-                    #pause
-                    #close claw
-                    #user_data.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
-                    #pause
-                    #raise claw
-                    #user_data.latest_msg = "0.0, 0.0, 1.0\n".encode('utf-8')
-             
+            # Stop if ball is within 1.1 m (3.6 ft) away from camera and trigger arm motion
+            else:
+                # Stop robot
+                user_data.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
+            
+                # Start arm sequence if not already running
+                if user_data.arm_state == "idle":
+                    user_data.arm_state = "lower_and_open"
+                    user_data.arm_state_start = time.time()
             detection_count += 1
 
             break
 
         # If no ball detected, gradually reduce velocity
     if detection_count == 0:
-        user_data.vel = max(user_data.vel - 0.05, 0.0)
-        user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
+        user_data.vel = max(user_data.vel - 0.05, 0.0, 0.0)
+        user_data.latest_msg = f"{user_data.vel}, 0.0, 0.0\n".encode('utf-8')
 
     string_to_print += (f"Target velocity: {user_data.latest_msg}")
     print(string_to_print)
     return Gst.PadProbeReturn.OK
+    # Update the arm state machine every frame
+    user_data.update_arm_state()
 
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parent.parent
@@ -156,6 +190,7 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
 
 
 
