@@ -7,6 +7,7 @@ import numpy as np
 import cv2
 import hailo
 from time import sleep
+import threading
 
 from hailo_apps.hailo_app_python.core.common.buffer_utils import get_caps_from_pad, get_numpy_from_buffer
 from hailo_apps.hailo_app_python.core.gstreamer.gstreamer_app import app_callback_class
@@ -21,8 +22,26 @@ class user_app_callback_class(app_callback_class):
     def __init__(self):
         super().__init__()
         self.messenger = serial.Serial(port='/dev/ttyACM0', baudrate=115200)  # New variable example
-        self.vel = 0.0  # persistent velocity state
         print(f"Messenger initiated at: {self.messenger.name}\n")
+        # Shared variable for latest message
+        self.latest_msg = "0.0, 0.0\n".encode('utf-8')
+        
+        # Start Pico update thread
+        self.pico_thread = threading.Thread(target=self.send_msg, daemon=True)
+        self.pico_thread.start()
+        self.vel =0
+
+        
+    def send_msg(self):
+        """Continuously send the latest message to the Pico."""
+        while True:
+            if self.messenger.inWaiting() > 0:
+                # print("pico msg received")
+                in_msg = self.messenger.readline().strip().decode("utf-8", "ignore")
+                # print(f"RPi recieved: {in_msg}")
+            self.messenger.write(self.latest_msg)
+            sleep(0.02)
+
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
@@ -44,8 +63,6 @@ def app_callback(pad, info, user_data):
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
 
-    ball_detected = False
-    msg = "0.0, 0.0\n".encode('utf-8')
 
     # Parse the detections
     detection_count = 0
@@ -56,32 +73,29 @@ def app_callback(pad, info, user_data):
 
         if "ball" in label:
             # Get track ID
-            ball_detected = True
             user_data.vel = 0.4
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
-            # string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
+            string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
             string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
             if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                msg = "0.4, 1.0\n".encode('utf-8')
+                user_data.latest_msg = "0.4, 1.0\n".encode('utf-8')
             elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                msg = "0.4, -1.0\n".encode('utf-8')
+                user_data.latest_msg = "0.4, -1.0\n".encode('utf-8')
             else:
-                msg = "0.4, 0.0\n".encode('utf-8')
-        
+                user_data.latest_msg = "0.4, 0.0\n".encode('utf-8')
             detection_count += 1
 
             break
 
-    # If no ball detected, gradually reduce velocity
-    if not ball_detected:
-        user_data.vel = max(user_data.vel - 0.05, 0.0)
-        msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
+        # If no ball detected, gradually reduce velocity
+        else:
+            user_data.vel = max(user_data.vel - 0.05, 0.0)
+            user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
 
-    string_to_print += (f"Target velocity: {msg}")
-    user_data.messenger.write(msg)
+    string_to_print += (f"Target velocity: {user_data.latest_msg}")
     print(string_to_print)
     return Gst.PadProbeReturn.OK
 
