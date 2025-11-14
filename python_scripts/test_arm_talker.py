@@ -1,5 +1,4 @@
 from pathlib import Path
-from machine import Pin, PWM, reset
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -163,9 +162,11 @@ def app_callback(pad, info, user_data):
                 user_data.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
             
                 # Start arm sequence if not already running
-                if user_data.arm_state == "idle":
-                    user_data.arm_state = "lower_and_open"
-                    user_data.arm_state_start = time.time()
+                # if user_data.arm_state == "idle":
+                #     user_data.arm_state = "lower_and_open"
+                #     user_data.arm_state_start = time.time()
+                user_data.latest_msg = "0.0, 0.0, -1.0\n".encode('utf-8')
+
             detection_count += 1
 
             break
@@ -190,7 +191,6 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
-
 
 
 
