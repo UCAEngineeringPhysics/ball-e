@@ -10,8 +10,9 @@ source setup_env.sh
 ### 2 Start detection
 ```console
 cd ~/ball-e/python_scripts
-python test_ball_detect_talker_revision.py --hef-path ../models/balle_detector.hef --labels-json ../models/ball_bucket.json --input rpi
+python test_arm_talker.py --hef-path ../models/yolov8s_11_4_25.hef --labels-json ../models/ball_bucket.json --input rpi
 ```
+
 > [!IMPORTANT]
 > Use `--hef-path` to specify model.
 > Use `--labels-json` to specify labels.
