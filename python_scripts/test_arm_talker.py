@@ -1,5 +1,5 @@
 from pathlib import Path
-#from machine import Pin, PWM, reset
+from machine import Pin, PWM, reset
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -9,6 +9,7 @@ import cv2
 import hailo
 from time import sleep
 import threading
+import time
 
 from hailo_apps.hailo_app_python.core.common.buffer_utils import get_caps_from_pad, get_numpy_from_buffer
 from hailo_apps.hailo_app_python.core.gstreamer.gstreamer_app import app_callback_class
@@ -61,10 +62,6 @@ def app_callback(pad, info, user_data):
     string_to_print = f"Frame count: {user_data.get_count()}\n"
 
     #Get resolution size
-    # caps_out = get_caps_from_pad(pad)
-    # caps_string= caps_out[0]
-    # caps = Gst.Caps.from_string(caps_string)
-    # structure = caps.get_structure(0)
     caps_string, frame_width, frame_height,  = get_caps_from_pad(pad)
     user_data.frame_width = frame_width
     user_data.frame_height = frame_height
@@ -109,24 +106,24 @@ def app_callback(pad, info, user_data):
             # Continue at regular speed if ball is more than 2.4 m (8 ft)from camera
             if Z > 2.4:   
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                    user_data.latest_msg = "0.4, 1.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.4, 1.0, 0.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                    user_data.latest_msg = "0.4, -1.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.4, -1.0, 0.0\n".encode('utf-8')
                 else:
-                    user_data.latest_msg = "0.4, 0.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.4, 0.0, 0.0\n".encode('utf-8')
                     
             # Slow down if ball is within 2.4 m (8 ft) of camera
             elif Z < 2.4 and Z > 1.2:       
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                    user_data.latest_msg = "0.2, 1.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.2, 1.0, 0.0\n".encode('utf-8')
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                    user_data.latest_msg = "0.2, -1.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.2, -1.0, 0.0\n".encode('utf-8')
                 else:
-                    user_data.latest_msg = "0.2, 0.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.2, 0.0, 0.0\n".encode('utf-8')
                     
             # Stop if ball is within 1.2 m (4 ft) away from camera and trigger arm motion
             else: 
-                    user_data.latest_msg = "0.0, 0.0\n".encode('utf-8')
+                    user_data.latest_msg = "0.0, 0.0, 0.0\n".encode('utf-8')
                     #pause
                     #lower arm and open claw
                     #user_data.latest_msg = "0.0, 0.0, -1.0\n".encode('utf-8')
@@ -159,6 +156,7 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
 
 
 
