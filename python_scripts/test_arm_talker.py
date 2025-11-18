@@ -174,7 +174,7 @@ def app_callback(pad, info, user_data):
         # If no ball detected, gradually reduce velocity
     if detection_count == 0:
         user_data.vel = max(user_data.vel - 0.05, 0.0, 0.0)
-        user_data.latest_msg = f"{user_data.vel}, 0.0, 0.0\n".encode('utf-8')
+        user_data.latest_msg = f"{user_data.vel}, 0.0, 0.0, 0.0\n".encode('utf-8')
 
     string_to_print += (f"Target velocity: {user_data.latest_msg}")
     print(string_to_print)
