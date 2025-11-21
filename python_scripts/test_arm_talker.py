@@ -50,31 +50,40 @@ class user_app_callback_class(app_callback_class):
     def send_msg(self):
         """Continuously send the latest message to the Pico."""
         while True:
-            now = time.time()
-            # ---- ARM STATE MACHINE ----
-            if self.arm_state == "lower":
-                self.latest_msg = "0.0, 0.0, 1000, -1000\n".encode()
-                if now - self.arm_state_start > 1.0:
-                    self.arm_state = "close"
-                    self.arm_state_start = now
-    
-            elif self.arm_state == "close":
-                self.latest_msg = "0.0, 0.0, 0, 1000\n".encode()
-                if now - self.arm_state_start > 1.0:
-                    self.arm_state = "raise"
-                    self.arm_state_start = now
-    
-            elif self.arm_state == "raise":
-                self.latest_msg = "0.0, 0.0, -1000, 0\n".encode()
-                if now - self.arm_state_start > 1.0:
-                    self.arm_state = "idle"
-            
+            self.handle_arm_state()
             if self.messenger.inWaiting() > 0:
                 # print("pico msg received")
                 in_msg = self.messenger.readline().strip().decode("utf-8", "ignore")
                 # print(f"RPi recieved: {in_msg}")
             self.messenger.write(self.latest_msg)
             sleep(0.02)
+    
+    def handle_arm_state(self):
+        now = time.time()
+
+        # lower arm and open claw
+        if self.arm_state == "lower":
+            self.latest_msg = "0.0, 0.0, 1000, -1000\n".encode()
+            if now - self.arm_start_time > 1.0:
+                self.arm_state = "close"
+                self.arm_start_time = now
+
+        # close claw
+        elif self.arm_state == "close":
+            self.latest_msg = "0.0, 0.0, 0, 1000\n".encode()
+            if now - self.arm_start_time > 1.0:
+                self.arm_state = "raise"
+                self.arm_start_time = now
+
+        # raise arm
+        elif self.arm_state == "raise":
+            self.latest_msg = "0.0, 0.0, -1000, 0\n".encode()
+            if now - self.arm_start_time > 1.0:
+                self.arm_state = "idle"  # done
+
+        # idle = normal driving
+        elif self.arm_state == "idle":
+            pass
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
@@ -158,10 +167,16 @@ def app_callback(pad, info, user_data):
 
             # Stop if ball is within 1.1 m (3.6 ft) away from camera and trigger arm motion
             else:
-                # Stop robot
-                user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
-                user_data.arm_state = "lower"
-                user_data.arm_state_start = time.time()
+                # Stop wheels and start arm sequence only once
+                if user_data.arm_state == "idle":
+                    user_data.arm_state = "lower"
+                    user_data.arm_start_time = time.time()
+            
+                # Freeze wheels while arm moves
+                if user_data.arm_state != "idle":
+                    user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode()
+                    return Gst.PadProbeReturn.OK
+
             detection_count += 1
 
             break
@@ -185,4 +200,5 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
 
