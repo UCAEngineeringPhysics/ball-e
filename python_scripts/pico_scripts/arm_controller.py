@@ -24,8 +24,8 @@ class ArmController:
     def lower_claw(self, dc_inc=0):  # Lower arm
         assert -50_000 <= dc_inc <= 50_000
         self.shoulder_duty += dc_inc
-        if self.shoulder_duty >= 2_800_000:
-            self.shoulder_duty = 2_800_000
+        if self.shoulder_duty >= 2_400_000:
+            self.shoulder_duty = 2_400_000
         elif self.shoulder_duty <= 700_000:
             self.shoulder_duty = 700_000
         self.shoulder_servo.duty_ns(self.shoulder_duty)
@@ -67,3 +67,4 @@ if __name__ == "__main__":
         ac.lower_claw(-20_000)
         sleep(0.1)
         print(f"Lifting claw duty cycle: {ac.shoulder_duty}")
+
