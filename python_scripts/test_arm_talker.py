@@ -44,11 +44,31 @@ class user_app_callback_class(app_callback_class):
 
         # # Initialize start time and state for arm motion
         # self.arm_state = "idle"
-        # self.arm_state_start = time.time()
+        # self.arm_state_start = 0
+    
 
     def send_msg(self):
         """Continuously send the latest message to the Pico."""
         while True:
+            now = time.time()
+            # ---- ARM STATE MACHINE ----
+            if self.arm_state == "lower":
+                self.latest_msg = "0.0, 0.0, 1000, -1000\n".encode()
+                if now - self.arm_state_start > 1.0:
+                    self.arm_state = "close"
+                    self.arm_state_start = now
+    
+            elif self.arm_state == "close":
+                self.latest_msg = "0.0, 0.0, 0, 1000\n".encode()
+                if now - self.arm_state_start > 1.0:
+                    self.arm_state = "raise"
+                    self.arm_state_start = now
+    
+            elif self.arm_state == "raise":
+                self.latest_msg = "0.0, 0.0, -1000, 0\n".encode()
+                if now - self.arm_state_start > 1.0:
+                    self.arm_state = "idle"
+            
             if self.messenger.inWaiting() > 0:
                 # print("pico msg received")
                 in_msg = self.messenger.readline().strip().decode("utf-8", "ignore")
@@ -140,15 +160,8 @@ def app_callback(pad, info, user_data):
             else:
                 # Stop robot
                 user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
-                #Pause
-                #Lower arm and open claw (no detection taking place -> motor vels are 0)
-                user_data.latest_msg = "0.0, 0.0, 1_000, -1_000\n".encode("utf-8")
-                #Close claw (no detection taking place -> motor vels are 0)
-                user_data.latest_msg = "0.0, 0.0, 0, 1_000\n".encode("utf-8")
-                #Raise arm (no detection taking place -> motor vels are 0)
-                user_data.latest_msg = "0.0, 0.0, -1_000, 0\n".encode("utf-8")
-
-
+                user_data.arm_state = "lower"
+                user_data.arm_state_start = time.time()
             detection_count += 1
 
             break
@@ -172,3 +185,4 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
