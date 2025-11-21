@@ -37,15 +37,15 @@ class user_app_callback_class(app_callback_class):
         # Shared variable for latest message
         self.latest_msg = "0.0, 0.0, 0, 0\n".encode("utf-8")
 
+        # # Initialize start time and state for arm motion
+        self.arm_state = "idle"
+        self.arm_state_start = 0
+    
         # Start Pico update thread
         self.pico_thread = threading.Thread(target=self.send_msg, daemon=True)
         self.pico_thread.start()
         self.vel = 0
 
-        # # Initialize start time and state for arm motion
-        # self.arm_state = "idle"
-        # self.arm_state_start = 0
-    
 
     def send_msg(self):
         """Continuously send the latest message to the Pico."""
@@ -64,21 +64,21 @@ class user_app_callback_class(app_callback_class):
         # lower arm and open claw
         if self.arm_state == "lower":
             self.latest_msg = "0.0, 0.0, 1000, -1000\n".encode()
-            if now - self.arm_start_time > 1.0:
+            if now - self.arm_start_time > 5.0:
                 self.arm_state = "close"
                 self.arm_start_time = now
 
         # close claw
         elif self.arm_state == "close":
             self.latest_msg = "0.0, 0.0, 0, 1000\n".encode()
-            if now - self.arm_start_time > 1.0:
+            if now - self.arm_start_time > 5.0:
                 self.arm_state = "raise"
                 self.arm_start_time = now
 
         # raise arm
         elif self.arm_state == "raise":
             self.latest_msg = "0.0, 0.0, -1000, 0\n".encode()
-            if now - self.arm_start_time > 1.0:
+            if now - self.arm_start_time > 5.0:
                 self.arm_state = "idle"  # done
 
         # idle = normal driving
@@ -157,7 +157,7 @@ def app_callback(pad, info, user_data):
                     user_data.latest_msg = "0.4, 0.0, 0, 0\n".encode("utf-8")
 
             # Slow down if ball is within 2.4 m (8 ft) of camera
-            elif Z < 2.4 and Z > 1.2:
+            elif Z < 2.4 and Z > 1:
                 if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                     user_data.latest_msg = "0.2, 1.0, 0, 0\n".encode("utf-8")
                 elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -165,7 +165,7 @@ def app_callback(pad, info, user_data):
                 else:
                     user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode("utf-8")
 
-            # Stop if ball is within 1.1 m (3.6 ft) away from camera and trigger arm motion
+            # Stop if ball is within 1 m (3.28 ft) away from camera and trigger arm motion
             else:
                 # Stop wheels and start arm sequence only once
                 if user_data.arm_state == "idle":
@@ -200,5 +200,4 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
-
 
