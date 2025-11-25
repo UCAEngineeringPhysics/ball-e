@@ -6,8 +6,8 @@ import os
 import numpy as np
 import cv2
 import hailo
+import time
 from time import sleep
-from utime import ticks_us
 
 import threading
 
@@ -34,7 +34,7 @@ class user_app_callback_class(app_callback_class):
         self.vel =0
         
         self.mode = "fixed"    
-        self.start_time = ticks_us()
+        self.start_time = time.time()
 
         
     def send_msg(self):
@@ -72,16 +72,16 @@ def app_callback(pad, info, user_data):
     detection_count = 0
     
     for detection in detections:
-    label = detection.get_label()
-    bbox = detection.get_bbox()
-    confidence = detection.get_confidence()
+        label = detection.get_label()
+        bbox = detection.get_bbox()
+        confidence = detection.get_confidence()
 
 #Travel fixed distance
     
         if user_data.mode == "fixed":
-            elapsed = ticks_us() - user_data.start_time
+            elapsed = time.time() - user_data.start_time
             user_data.latest_msg = "0.3, 0.0, 0, 0\n"   
-            if elapsed >= 10_000_000:      
+            if elapsed >= 10:      
                 user_data.mode = "detect"
                 print("Switching to detection mode")
             return Gst.PadProbeReturn.OK
