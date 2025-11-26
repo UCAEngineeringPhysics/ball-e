@@ -63,12 +63,20 @@ def app_callback(pad, info, user_data):
     # Using the user_data to count the number of frames
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
+        # Get resolution size
+    (
+        caps_string,
+        frame_width,
+        frame_height,
+    ) = get_caps_from_pad(pad)
+    user_data.frame_width = frame_width
+    user_data.frame_height = frame_height
    
     if user_data.mode == "pause":
         elapsed = time.time() - user_data.start_time
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
 
-        if elapsed >= 40:      
+        if elapsed >= 10:      
             user_data.mode = "fixed"
             user_data.start_time = time.time() 
 
@@ -76,7 +84,7 @@ def app_callback(pad, info, user_data):
 #Travel fixed distance
     if user_data.mode == "fixed":
         elapsed = time.time() - user_data.start_time
-        user_data.latest_msg = "0.3, 0.0, 0, 0\n".encode('utf-8')   
+        user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')   
         if elapsed >= 10:      
             user_data.mode = "detect"
             print("Switching to detection mode")
@@ -98,6 +106,15 @@ def app_callback(pad, info, user_data):
 #Travel based on obj detection
         
         if "ball" in label:
+            # Get bounding box height in pixels
+            h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
+            # focal length in pixels
+            f_pixels = 3386.0
+            # Height of ball
+            H_real = 0.1524  # meters
+            # Distance from camera to ball
+            Z = (f_pixels * H_real) / h_pixels
+
             # Get track ID
             user_data.vel = 0.4
             track_id = 0
@@ -106,13 +123,26 @@ def app_callback(pad, info, user_data):
                 track_id = track[0].get_id()
             string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
             string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
-            if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                user_data.latest_msg = "0.2, 1.0, 0, 0\n".encode('utf-8')
-            elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                user_data.latest_msg = "0.2, -1.0, 0, 0\n".encode('utf-8')
+            if Z > 2.4:
+                if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
+                    user_data.latest_msg = "0.2, 1.0, 0, 0\n".encode('utf-8')
+                elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
+                    user_data.latest_msg = "0.2, -1.0, 0, 0\n".encode('utf-8')
+                else:
+                    user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
+                detection_count += 1
+            elif Z < 2.4 and Z > 1.0:
+                if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
+                    user_data.latest_msg = "0.1, 1.0, 0, 0\n".encode("utf-8")
+                elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
+                    user_data.latest_msg = "0.1, -1.0, 0, 0\n".encode("utf-8")
+                else:
+                    user_data.latest_msg = "0.1, 0.0, 0, 0\n".encode("utf-8")
             else:
-                user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
-            detection_count += 1
+                # Stop wheels and start arm sequence only once
+
+                    user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode()
+                    return Gst.PadProbeReturn.OK
 
             break
 
