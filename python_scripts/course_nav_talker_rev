@@ -74,6 +74,11 @@ def app_callback(pad, info, user_data):
 
     if user_data.mode == "pause":
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
+    elif user_data.mode == "pick":
+        user_data.picker_counter += 1
+        user_data.latest_msg = "".encode('utf-8')
+        if user_data.pick_counter >= 50:
+            user_data.mode = "pause"    
     elif user_data.mode == "fixed":
         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
