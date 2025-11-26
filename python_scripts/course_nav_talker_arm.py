@@ -80,30 +80,30 @@ def app_callback(pad, info, user_data):
           
     elif user_data.mode == "pick":
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
-        if user_data.arm_state = "lower"
+        if user_data.arm_state == "lower":
             user_data.latest_msg = "0.0, 0.0, 1000, -1000\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 50:
-                user_data.arms_state = "close"
+            if user_data.picker_counter >= 120:
+                user_data.arm_state = "close"
                 user_data.picker_counter = 0
                 
-        elif user_data.arm_state = "close"
+        elif user_data.arm_state == "close":
             user_data.latest_msg = "0.0, 0.0, 0, 1000\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 50:
-                user_data.arms_state = "raise"
+            if user_data.picker_counter >= 100:
+                user_data.arm_state = "raise"
                 user_data.picker_counter = 0
                 
-        elif user_data.arm_state = "raise"
+        elif user_data.arm_state == "raise":
             user_data.latest_msg = "0.0, 0.0, -1000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 50:
-                user_data.arms_state = "idle"
+            if user_data.picker_counter >= 90:
+                user_data.arm_state = "idle"
                 user_data.mode = "pause"
                 user_data.picker_counter = 0
        
        # idle = normal driving
-        elif self.arm_state == "idle":
+        elif user_data.arm_state == "idle":
             pass            
             
     elif user_data.mode == "fixed":
@@ -157,7 +157,7 @@ def app_callback(pad, info, user_data):
                     else:
                         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
                 # elif Z <= 2.4 and Z > 1.0:
-                elif 1.25 < user_data.distance <= 2.4:
+                elif 0.92 < user_data.distance <= 2.4:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
                         user_data.latest_msg = "0.1, 0.5, 0, 0\n".encode("utf-8")
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -187,4 +187,3 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
-
