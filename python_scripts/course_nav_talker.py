@@ -64,6 +64,16 @@ def app_callback(pad, info, user_data):
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
 
+#Travel fixed distance
+    if user_data.mode == "fixed":
+        elapsed = time.time() - user_data.start_time
+        user_data.latest_msg = "0.3, 0.0, 0, 0\n".encode('utf-8')   
+        if elapsed >= 10:      
+            user_data.mode = "detect"
+            print("Switching to detection mode")
+        return Gst.PadProbeReturn.OK
+
+#Travel based on obj detection
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
@@ -75,16 +85,6 @@ def app_callback(pad, info, user_data):
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-
-#Travel fixed distance
-    
-        if user_data.mode == "fixed":
-            elapsed = time.time() - user_data.start_time
-            user_data.latest_msg = "0.3, 0.0, 0, 0\n"   
-            if elapsed >= 10:      
-                user_data.mode = "detect"
-                print("Switching to detection mode")
-            return Gst.PadProbeReturn.OK
 
 #Travel based on obj detection
         
@@ -109,7 +109,7 @@ def app_callback(pad, info, user_data):
 
         # If no ball detected, gradually reduce velocity
         else:
-            user_data.vel = max(user_data.vel - 0.05, 0.0, 0, 0)
+            user_data.vel = max(user_data.vel - 0.05, 0.0)
             user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')
 
     string_to_print += (f"Target velocity: {user_data.latest_msg}")
