@@ -33,7 +33,7 @@ class user_app_callback_class(app_callback_class):
         self.pico_thread.start()
         self.vel =0
         
-        self.mode = "fixed"    
+        self.mode = "pause"    
         self.start_time = time.time()
 
         
@@ -63,7 +63,16 @@ def app_callback(pad, info, user_data):
     # Using the user_data to count the number of frames
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
+   
+    if user_data.mode == "pause":
+        elapsed = time.time() - user_data.start_time
+        user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
 
+        if elapsed >= 40:      
+            user_data.mode = "fixed"
+            user_data.start_time = time.time() 
+
+                
 #Travel fixed distance
     if user_data.mode == "fixed":
         elapsed = time.time() - user_data.start_time
