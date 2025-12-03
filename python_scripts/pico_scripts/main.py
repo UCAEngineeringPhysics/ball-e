@@ -16,7 +16,7 @@ freq(200_000_000)  # Pico 2 original: 150_000_000
 ddc = DiffDriveController(
     left_ids=((6, 7, 8), (11, 10)), right_ids=((2, 3, 4), (21, 20))
 )
-arm = ArmController(12, 13)
+arm = ArmController(12, 13, 14)
 # Create a poll to receive messages from host machine
 cmd_vel_listener = select.poll()
 cmd_vel_listener.register(sys.stdin, select.POLLIN)
@@ -40,9 +40,13 @@ while True:
     toc = ticks_us()
     if toc - tic >= 10000:
         meas_lin_vel, meas_ang_vel = ddc.get_vels()
-        shoulder_duty = arm.shoulder_duty
+        shoulder_duty_a = arm.shoulder_duty_a
+        shoulder_duty_b = arm.shoulder_duty_b
+
         claw_duty = arm.claw_duty
         out_msg = f"{meas_lin_vel}, {meas_ang_vel}\n"
         #         out_msg = "PICO\n"
         sys.stdout.write(out_msg)
         tic = ticks_us()
+
+
