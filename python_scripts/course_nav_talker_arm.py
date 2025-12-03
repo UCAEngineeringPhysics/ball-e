@@ -81,23 +81,23 @@ def app_callback(pad, info, user_data):
     elif user_data.mode == "pick":
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
         if user_data.arm_state == "lower":
-            user_data.latest_msg = "0.0, 0.0, 1000, -1000\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, 1000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 120:
+            if user_data.picker_counter >= 620:
                 user_data.arm_state = "close"
                 user_data.picker_counter = 0
                 
         elif user_data.arm_state == "close":
             user_data.latest_msg = "0.0, 0.0, 0, 1000\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 100:
+            if user_data.picker_counter >= 150:
                 user_data.arm_state = "raise"
                 user_data.picker_counter = 0
                 
         elif user_data.arm_state == "raise":
             user_data.latest_msg = "0.0, 0.0, -1000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 90:
+            if user_data.picker_counter >= 180:
                 user_data.arm_state = "idle"
                 user_data.mode = "pause"
                 user_data.picker_counter = 0
@@ -109,7 +109,7 @@ def app_callback(pad, info, user_data):
     elif user_data.mode == "fixed":
         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 100:
+        if user_data.fixed_travel_counter >= 170:
             user_data.mode = "detect"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
@@ -150,15 +150,15 @@ def app_callback(pad, info, user_data):
                 string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
                 # if Z > 2.4:
                 if user_data.distance >= 2.4:
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
+                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
                         user_data.latest_msg = "0.2, 0.5, 0, 0\n".encode('utf-8')
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
                         user_data.latest_msg = "0.2, -0.5, 0, 0\n".encode('utf-8')
                     else:
                         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
                 # elif Z <= 2.4 and Z > 1.0:
-                elif 0.92 < user_data.distance <= 2.4:
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
+                elif 1.237 < user_data.distance <= 2.4:
+                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
                         user_data.latest_msg = "0.1, 0.5, 0, 0\n".encode("utf-8")
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
                         user_data.latest_msg = "0.1, -0.5, 0, 0\n".encode("utf-8")
