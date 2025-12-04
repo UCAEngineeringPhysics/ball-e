@@ -34,7 +34,7 @@ class user_app_callback_class(app_callback_class):
         self.pico_thread.start()
         self.vel = 0
         
-        self.mode = "fixed"
+        self.mode = "fixed_ball"
         self.arm_state = "idle"
         self.fixed_travel_counter = 0
         self.picker_counter = 0
@@ -81,24 +81,24 @@ def app_callback(pad, info, user_data):
     elif user_data.mode == "pick":
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
         if user_data.arm_state == "lower":
-            user_data.latest_msg = "0.0, 0.0, 1000, 0\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, 3000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 620:
+            if user_data.picker_counter >= 215:
                 user_data.arm_state = "close"
                 user_data.picker_counter = 0
                 
         elif user_data.arm_state == "close":
-            user_data.latest_msg = "0.0, 0.0, 0, 1000\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, 0, 3000\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 150:
+            if user_data.picker_counter >= 70:
                 user_data.arm_state = "raise"
                 user_data.picker_counter = 0
                 
         elif user_data.arm_state == "raise":
-            user_data.latest_msg = "0.0, 0.0, -1000, 0\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, -3000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 450:
-                user_data.mode = "detect_bucket"
+            if user_data.picker_counter >= 200:
+                user_data.mode = "fixed_bucket"
                 user_data.picker_counter = 0
         # idle = normal driving
         elif user_data.arm_state == "idle":
@@ -107,26 +107,43 @@ def app_callback(pad, info, user_data):
     elif user_data.mode == "drop":
         user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
         if user_data.arm_state == "lower":
-            user_data.latest_msg = "0.0, 0.0, 1000, 0\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, 3000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 100:
+            if user_data.picker_counter >= 80:
                 user_data.arm_state = "open"
                 user_data.picker_counter = 0          
                 
         elif user_data.arm_state == "open":
-            user_data.latest_msg = "0.0, 0.0, 0, -1000\n".encode('utf-8')
+            user_data.latest_msg = "0.0, 0.0, 0, -3000\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 200:
+            if user_data.picker_counter >= 40:
                 #Return both arm and claw to neutral
                 user_data.arm_state = "idle"
                 user_data.picker_counter = 0
                           
             
-    elif user_data.mode == "fixed":
+    elif user_data.mode == "fixed_ball":
         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
         if user_data.fixed_travel_counter >= 170:
             user_data.mode = "detect"
+            user_data.fixed_travel_counter = 0
+            user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
+
+    elif user_data.mode == "fixed_bucket":
+        user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
+        user_data.fixed_travel_counter += 1
+        if user_data.fixed_travel_counter >= 210:
+            user_data.mode = "detect_bucket"
+            user_data.fixed_travel_counter = 0
+            user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
+
+    elif user_data.mode == "fixed_drop":
+        user_data.latest_msg = "0.1, 0.0, 0, 0\n".encode('utf-8')
+        user_data.fixed_travel_counter += 1
+        if user_data.fixed_travel_counter >= 180:
+            user_data.arm_state = "lower"
+            user_data.mode = "drop"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode('utf-8')
             
@@ -167,15 +184,15 @@ def app_callback(pad, info, user_data):
                 string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
                 string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
                 # if Z > 2.4:
-                if user_data.distance >= 2.4:
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 4:
+                if user_data.distance >= 4.0:
+                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
                         user_data.latest_msg = "0.2, 0.5, 0, 0\n".encode('utf-8')
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
                         user_data.latest_msg = "0.2, -0.5, 0, 0\n".encode('utf-8')
                     else:
                         user_data.latest_msg = "0.2, 0.0, 0, 0\n".encode('utf-8')
                 # elif Z <= 2.4 and Z > 1.0:
-                elif 2 < user_data.distance <= 4:
+                elif 2.4 < user_data.distance <= 4.0:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
                         user_data.latest_msg = "0.1, 0.5, 0, 0\n".encode("utf-8")
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
@@ -185,8 +202,7 @@ def app_callback(pad, info, user_data):
                 else:
                     # Stop wheels and start arm sequence only once
                     user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode()
-                    user_data.arm_state = "lower"
-                    user_data.mode = "drop"
+                    user_data.mode = "fixed_drop"
         else:  # no detection
             user_data.latest_msg = "0.0, 0.0, 0, 0\n".encode()          
                   
