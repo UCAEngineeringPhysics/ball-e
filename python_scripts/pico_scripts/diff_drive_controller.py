@@ -9,7 +9,7 @@ class DiffDriveController:
         self.right_wheel = WheelController(*right_ids)
 
         # Properties
-        self.WHEEL_SEP = 0.52  # wheel separation distance
+        self.WHEEL_SEP = 0.545  # wheel separation distance
         # Variables
         self.lin_vel = 0.0
         self.ang_vel = 0.0
@@ -52,3 +52,4 @@ if __name__ == "__main__":
         print(f"target velocity: {v/10}, actual velocity: {bot.get_vel()}")
     bot.set_vel(0.0, 0.0)
     sleep(1)
+
