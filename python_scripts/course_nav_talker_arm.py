@@ -1,3 +1,4 @@
+
 from pathlib import Path
 import gi
 gi.require_version('Gst', '1.0')
@@ -26,7 +27,7 @@ class user_app_callback_class(app_callback_class):
         self.messenger = serial.Serial(port='/dev/ttyACM0', baudrate=115200)  # New variable example
         print(f"Messenger initiated at: {self.messenger.name}\n")
         # Shared variable for latest message
-        self.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+        self.latest_msg = "0.0, 0.0, 0, 0, 10\n".encode('utf-8')
         
         # Start Pico update thread
         self.pico_thread = threading.Thread(target=self.send_msg, daemon=True)
@@ -103,8 +104,7 @@ def app_callback(pad, info, user_data):
                 user_data.picker_counter = 0
         # idle = normal driving
         elif user_data.arm_state == "idle":
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 10\n".encode('utf-8')
-            user_data.picker_counter = 0         
+            pass         
         
     elif user_data.mode == "drop":
         user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
@@ -123,8 +123,7 @@ def app_callback(pad, info, user_data):
                     user_data.mode = "pause"
                 else:     
                     #Return both arm and claw to neutral
-                    user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')                          
-                    user_data.arm_state = "idle"
+                    user_data.latest_msg = "0.0, 0.0, 0, 0, 10\n".encode('utf-8')                          
                     user_data.mode = "swivel_large_right"
                     user_data.fixed_travel_counter = 0
             
