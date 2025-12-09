@@ -1,3 +1,4 @@
+
 """
 Rename this script to main.py, then upload to the pico board.
 """
@@ -11,7 +12,7 @@ from utime import ticks_us
 
 # SETUP
 # Overclock
-freq(200_000_000)  # Pico 2 original: 150_000_000
+freq(250_000_000)  # Pico 2 original: 150_000_000
 # Instantiate robot
 ddc = DiffDriveController(
     left_ids=((6, 7, 8), (11, 10)), right_ids=((2, 3, 4), (21, 20))
@@ -29,14 +30,19 @@ while True:
     for msg, _ in event:
         buffer = msg.readline().strip().split(",")
         # print(f"{balle.lin_vel},{balle.ang_vel}")
-        if len(buffer) == 4:
+        if len(buffer) == 5:
             target_lin_vel = float(buffer[0])
             target_ang_vel = float(buffer[1])
             sho_vel = int(buffer[2])
             cla_vel = int(buffer[3])
+            arm_state = int(buffer[4])        
             ddc.set_vels(target_lin_vel, target_ang_vel)
-            arm.lower_claw(sho_vel)
-            arm.close_claw(cla_vel)
+            if arm_state == 10:      # idle ? go to neutral
+                arm.set_neutral()
+            else:
+                arm.lower_claw(sho_vel)
+                arm.close_claw(cla_vel)           
+
     toc = ticks_us()
     if toc - tic >= 10000:
         meas_lin_vel, meas_ang_vel = ddc.get_vels()
