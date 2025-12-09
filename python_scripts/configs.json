@@ -1,7 +1,19 @@
 {
-  "record_btn": 5,
-  "pause_btn": 4,
-  "stop_btn": 0,
-  "frame_rate": 24,
-  "record_cap": 15000
+    "lin_vel_axis": 1,
+    "ang_vel_axis": 2,
+    "max_lin_vel": 0.3,
+    "max_ang_vel": 0.5,
+    "record_btn": 5,
+    "pause_btn": 4,
+    "stop_btn": 0,
+    "label_switch_btn": 1,
+    "preview_btn": 3,
+    "arm_lift_btn": 7,
+    "arm_lower_btn": 6,
+    "claw_open_btn": 9,
+    "claw_close_btn": 8,
+    "arm_speed": 3000,
+    "claw_speed": 3000,
+    "frame_rate": 24,
+    "record_cap": 100000
 }
