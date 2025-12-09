@@ -11,7 +11,7 @@ import csv
 
 # SETUP
 # Define paths
-project_root = Path(__file__).parents[1]
+project_root = Path.home().joinpath("ball-e", "python-scripts")
 data_dir = project_root.joinpath("senior_design_data")
 image_dir = str(data_dir.joinpath(datetime.now().strftime("%Y-%m-%d-%H-%M"), "images"))
 Path(image_dir).mkdir(parents=True, exist_ok=True)
@@ -24,7 +24,7 @@ if not Path(label_path).exists():
         writer.writerow(["filename", "label"])  # Header row
 
 # Load configs
-params_file_path = str(project_root.joinpath("scripts", "configs.json"))
+params_file_path = str(project_root.joinpath("configs.json"))
 with open(params_file_path, "r") as file:
     params = json.load(file)
 
@@ -36,6 +36,7 @@ print(f"Pico is connected to port: {messenger.name}")
 pygame.display.init()
 pygame.joystick.init()
 js = pygame.joystick.Joystick(0)
+print(f"Controller connected: {js.get_name()}")
 
 # Init camera
 cv.startWindowThread()
@@ -54,6 +55,7 @@ cam.configure(
 cam.start()
 
 # Countdown
+print("Starting countdown...")
 for i in reversed(range(3 * params["frame_rate"])):
     frame = cam.capture_array()
     if frame is None:
@@ -90,6 +92,20 @@ show_preview = False
 frame_counts = 0
 record_counts = 0
 
+print("\n=== CONTROLS ===")
+print("Button 0: Emergency Stop")
+print("Button 1: Switch Label")
+print("Button 3: Toggle Preview")
+print("Button 4: Pause/Unpause")
+print("Button 5: Start/Stop Recording")
+print("Button 6: Lower Arm")
+print("Button 7: Lift Arm")
+print("Button 8: Close Claw")
+print("Button 9: Open Claw")
+print("Left Stick Y: Forward/Backward")
+print("Right Stick X: Turn Left/Right")
+print("================\n")
+
 # MAIN LOOP
 try:
     while not is_stopped:
@@ -100,18 +116,19 @@ try:
             break
         frame_counts += 1
         
-        # Show preview if enabled
+        # Show preview if enabled (non-blocking)
         if show_preview:
-            display_frame = frame.copy()
-            cv.putText(display_frame, f"Label: {current_label}", (10, 20), 
-                      cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv.putText(display_frame, f"Recording: {is_recording}", (10, 40),
-                      cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if is_recording else (0, 0, 255), 2)
+            display_frame = cv.resize(frame, (400, 360))  # Bigger preview
+            cv.putText(display_frame, f"Label: {current_label}", (10, 30), 
+                      cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            cv.putText(display_frame, f"Recording: {is_recording}", (10, 60),
+                      cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0) if is_recording else (0, 0, 255), 2)
+            cv.putText(display_frame, f"Paused: {is_paused}", (10, 90),
+                      cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
             cv.imshow("Camera Preview", display_frame)
-            if cv.waitKey(1) == ord("q"):
-                break
+            cv.waitKey(1)  # Non-blocking
         
-        # Process gamepad input
+        # Process gamepad input - MUST process events every frame
         for e in pygame.event.get():
             if e.type == pygame.JOYBUTTONDOWN:
                 # Emergency stop
@@ -151,50 +168,52 @@ try:
                     print(f"Preview: {show_preview}")
                 
                 # Arm controls - lift
-                elif js.get_button(params["arm_lift_btn"]):
+                elif js.get_button(params["arm_lift_btn"]) and not is_paused:
                     sho_vel = -params["arm_speed"]
                     arm_state = 20  # Active control mode
                     print("Lifting arm")
                 
                 # Arm controls - lower
-                elif js.get_button(params["arm_lower_btn"]):
+                elif js.get_button(params["arm_lower_btn"]) and not is_paused:
                     sho_vel = params["arm_speed"]
                     arm_state = 20  # Active control mode
                     print("Lowering arm")
                 
                 # Claw controls - open
-                elif js.get_button(params["claw_open_btn"]):
+                elif js.get_button(params["claw_open_btn"]) and not is_paused:
                     cla_vel = -params["claw_speed"]
                     arm_state = 20  # Active control mode
                     print("Opening claw")
                 
                 # Claw controls - close
-                elif js.get_button(params["claw_close_btn"]):
+                elif js.get_button(params["claw_close_btn"]) and not is_paused:
                     cla_vel = params["claw_speed"]
                     arm_state = 20  # Active control mode
                     print("Closing claw")
             
             elif e.type == pygame.JOYBUTTONUP:
                 # Stop arm when button released
-                if js.get_button(params["arm_lift_btn"]) == 0 and js.get_button(params["arm_lower_btn"]) == 0:
+                if e.button == params["arm_lift_btn"] or e.button == params["arm_lower_btn"]:
                     sho_vel = 0
                     # If both arm and claw stopped, return to neutral
                     if cla_vel == 0:
                         arm_state = 10
                 # Stop claw when button released
-                if js.get_button(params["claw_open_btn"]) == 0 and js.get_button(params["claw_close_btn"]) == 0:
+                elif e.button == params["claw_open_btn"] or e.button == params["claw_close_btn"]:
                     cla_vel = 0
                     # If both arm and claw stopped, return to neutral
                     if sho_vel == 0:
                         arm_state = 10
-
-            
-            elif e.type == pygame.JOYAXISMOTION:
-                if not is_paused:
-                    # Linear velocity (forward/backward) - left stick vertical
-                    lin_vel = round(-js.get_axis(params["lin_vel_axis"]) * params["max_lin_vel"], 2)
-                    # Angular velocity (turning) - right stick horizontal
-                    ang_vel = round(-js.get_axis(params["ang_vel_axis"]) * params["max_ang_vel"], 2)
+        
+        # Read joystick axes continuously (not just on events)
+        if not is_paused:
+            # Linear velocity (forward/backward) - left stick vertical (axis 1)
+            lin_vel = round(-js.get_axis(params["lin_vel_axis"]) * params["max_lin_vel"], 2)
+            # Angular velocity (turning) - right stick horizontal (axis 2)
+            ang_vel = round(-js.get_axis(params["ang_vel_axis"]) * params["max_ang_vel"], 2)
+        else:
+            lin_vel = 0.0
+            ang_vel = 0.0
         
         # Send control message to Pico
         msg = f"{lin_vel}, {ang_vel}, {sho_vel}, {cla_vel}, {arm_state}\n".encode('utf-8')
@@ -233,4 +252,3 @@ finally:
     print(f"\nSession complete! Recorded {record_counts} total frames.")
     print(f"Data saved to: {Path(image_dir).parent}")
     sys.exit()
-# End of file: images/sd_image_collection.py
