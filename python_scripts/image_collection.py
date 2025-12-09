@@ -89,7 +89,7 @@ try:
                     else:
                         mode = "n"
                     # print(f"Paused: {is_paused}")  # debug
-                elif js.get_button(params["record_btn"]):
+                #elif js.get_button(params["record_btn"]):
                     if not is_paused:
                         is_recording = not is_recording
                         if is_recording:
