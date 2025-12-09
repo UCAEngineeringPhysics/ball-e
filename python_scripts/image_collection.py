@@ -127,6 +127,9 @@ try:
                         is_recording = False
                         lin_vel = 0.0
                         ang_vel = 0.0
+                        sho_vel = 0
+                        cla_vel = 0
+                        arm_state = 10  # Reset to neutral when paused
                     print(f"Paused: {is_paused}")
                 
                 # Toggle recording
@@ -150,30 +153,41 @@ try:
                 # Arm controls - lift
                 elif js.get_button(params["arm_lift_btn"]):
                     sho_vel = -params["arm_speed"]
+                    arm_state = 20  # Active control mode
                     print("Lifting arm")
                 
                 # Arm controls - lower
                 elif js.get_button(params["arm_lower_btn"]):
                     sho_vel = params["arm_speed"]
+                    arm_state = 20  # Active control mode
                     print("Lowering arm")
                 
                 # Claw controls - open
                 elif js.get_button(params["claw_open_btn"]):
                     cla_vel = -params["claw_speed"]
+                    arm_state = 20  # Active control mode
                     print("Opening claw")
                 
                 # Claw controls - close
                 elif js.get_button(params["claw_close_btn"]):
                     cla_vel = params["claw_speed"]
+                    arm_state = 20  # Active control mode
                     print("Closing claw")
             
             elif e.type == pygame.JOYBUTTONUP:
                 # Stop arm when button released
                 if js.get_button(params["arm_lift_btn"]) == 0 and js.get_button(params["arm_lower_btn"]) == 0:
                     sho_vel = 0
+                    # If both arm and claw stopped, return to neutral
+                    if cla_vel == 0:
+                        arm_state = 10
                 # Stop claw when button released
                 if js.get_button(params["claw_open_btn"]) == 0 and js.get_button(params["claw_close_btn"]) == 0:
                     cla_vel = 0
+                    # If both arm and claw stopped, return to neutral
+                    if sho_vel == 0:
+                        arm_state = 10
+
             
             elif e.type == pygame.JOYAXISMOTION:
                 if not is_paused:
@@ -219,3 +233,4 @@ finally:
     print(f"\nSession complete! Recorded {record_counts} total frames.")
     print(f"Data saved to: {Path(image_dir).parent}")
     sys.exit()
+# End of file: images/sd_image_collection.py
