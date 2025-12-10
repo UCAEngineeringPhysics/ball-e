@@ -32,19 +32,13 @@ try:
     while not is_stopped:
         for e in pygame.event.get():  # read controller input
             if e.type == pygame.JOYBUTTONDOWN:
-                if js.get_button(params["stop_btn"]):  # emergency stop
-                    is_stopped = True
-                    print("E-STOP PRESSED. TERMINATE")
-                    pygame.quit()
-                    messenger.close()
-                    sys.exit()
-                elif js.get_button(params["lower_button"]):
+                if js.get_button(params["lower_button"]):
                     act_lower = 1
-                elif js.get_button(params["raise_button"])
+                elif js.get_button(params["raise_button"]):
                     act_lower = -1
                 elif js.get_button(params["close_button"]):
                     act_close = 1
-                elif js.get_button(params["open_button"])
+                elif js.get_button(params["open_button"]):
                     act_close = -1
                 else:
                     act_lower = 0
@@ -66,10 +60,11 @@ try:
         else:
             mode = "d"
         msg = f"{act_lin}, {act_ang}, {act_close}, {act_lower}\n".encode("utf-8")
-        if not act_ang == 0.0 or not act_lin == 0.0:
-            messenger.write(msg)
+        messenger.write(msg)
         # Log action
-        print(f"mode: {mode}, action: {act_lin, act_ang}")  # debug
+        print(
+            f"mode: {mode}, action: {act_lin, act_ang, act_close, act_lower}"
+        )  # debug
         # 20Hz
         sleep(0.05)
 
