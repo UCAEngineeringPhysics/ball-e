@@ -29,7 +29,9 @@ with open(params_file_path, "r") as file:
     params = json.load(file)
 
 # Init serial port
-messenger = serial.Serial(port="/dev/ttyACM0", baudrate=115200)
+messenger = serial.Serial(port="/dev/ttyACM0", baudrate=115200, timeout=0.1)
+messenger.reset_input_buffer()  # Clear any old data
+messenger.reset_output_buffer()
 print(f"Pico is connected to port: {messenger.name}")
 
 # Init controller
@@ -194,14 +196,15 @@ try:
                     print("Closing claw")
             
             elif e.type == pygame.JOYBUTTONUP:
+                button_released = e.button
                 # Stop arm when button released
-                if e.button == params["arm_lift_btn"] or e.button == params["arm_lower_btn"]:
+                if button_released == params["arm_lift_btn"] or button_released == params["arm_lower_btn"]:
                     sho_vel = 0
                     # If both arm and claw stopped, return to neutral
                     if cla_vel == 0:
                         arm_state = 10
                 # Stop claw when button released
-                elif e.button == params["claw_open_btn"] or e.button == params["claw_close_btn"]:
+                elif button_released == params["claw_open_btn"] or button_released == params["claw_close_btn"]:
                     cla_vel = 0
                     # If both arm and claw stopped, return to neutral
                     if sho_vel == 0:
@@ -211,15 +214,23 @@ try:
         if not is_paused:
             # Linear velocity (forward/backward) - left stick vertical (axis 1)
             lin_vel = round(-js.get_axis(params["lin_vel_axis"]) * params["max_lin_vel"], 2)
-            # Angular velocity (turning) - right stick horizontal (axis 2)
+            # Angular velocity (turning) - right stick horizontal (axis 3)
             ang_vel = round(-js.get_axis(params["ang_vel_axis"]) * params["max_ang_vel"], 2)
+            
+            # Debug output every 30 frames
+            if frame_counts % 30 == 0 and (abs(lin_vel) > 0.01 or abs(ang_vel) > 0.01):
+                print(f"Sending: lin={lin_vel:.2f}, ang={ang_vel:.2f}, sho={sho_vel}, cla={cla_vel}, state={arm_state}")
         else:
             lin_vel = 0.0
             ang_vel = 0.0
         
         # Send control message to Pico
         msg = f"{lin_vel}, {ang_vel}, {sho_vel}, {cla_vel}, {arm_state}\n".encode('utf-8')
-        messenger.write(msg)
+        try:
+            messenger.write(msg)
+            messenger.flush()  # Force send immediately
+        except serial.SerialException as e:
+            print(f"Serial error: {e}")
         
         # Save image and label if recording
         if is_recording:
