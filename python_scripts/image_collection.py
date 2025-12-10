@@ -11,7 +11,7 @@ import csv
 
 # SETUP
 # Define paths
-project_root = Path.home().joinpath("ball-e", "python-scripts")
+project_root = Path.home().joinpath("ball-e", "python_scripts")
 data_dir = project_root.joinpath("senior_design_data")
 image_dir = str(data_dir.joinpath(datetime.now().strftime("%Y-%m-%d-%H-%M"), "images"))
 Path(image_dir).mkdir(parents=True, exist_ok=True)
@@ -37,33 +37,6 @@ pygame.display.init()
 pygame.joystick.init()
 js = pygame.joystick.Joystick(0)
 print(f"Controller connected: {js.get_name()}")
-print(f"Number of axes: {js.get_numaxes()}")
-print(f"Number of buttons: {js.get_numbuttons()}")
-
-# DIAGNOSTIC MODE - Test your controller axes
-print("\n=== DIAGNOSTIC MODE ===")
-print("Move each joystick and press buttons to see which axis/button is which")
-print("Press Button 0 (stop_btn) when done\n")
-
-diagnostic_done = False
-while not diagnostic_done:
-    for e in pygame.event.get():
-        if e.type == pygame.JOYAXISMOTION:
-            for i in range(js.get_numaxes()):
-                val = js.get_axis(i)
-                if abs(val) > 0.1:  # Only show if significant movement
-                    print(f"Axis {i}: {val:.2f}")
-        elif e.type == pygame.JOYBUTTONDOWN:
-            for i in range(js.get_numbuttons()):
-                if js.get_button(i):
-                    print(f"Button {i} pressed")
-                    if i == 0:  # Stop button ends diagnostic
-                        diagnostic_done = True
-                        break
-    sleep(0.1)
-
-print("=== END DIAGNOSTIC ===\n")
-print("Update configs.json with correct axis numbers if needed!\n")
 
 # Init camera
 cv.startWindowThread()

@@ -50,7 +50,7 @@ class WheelController(WheelDriver):
         """
         Set a reference LINEAR VELOCITY for this wheel
         """
-        if target_vel is not self.target_vel:
+        if target_vel != self.target_vel:
             self.target_vel = target_vel
             self.acc_err = 0.0
             self.set_vel_counter = 0
