@@ -93,15 +93,15 @@ frame_counts = 0
 record_counts = 0
 
 print("\n=== CONTROLS ===")
-print("Button 0: Emergency Stop")
-print("Button 1: Switch Label")
-print("Button 3: Toggle Preview")
-print("Button 4: Pause/Unpause")
-print("Button 5: Start/Stop Recording")
-print("Button 6: Lower Arm")
-print("Button 7: Lift Arm")
-print("Button 8: Close Claw")
-print("Button 9: Open Claw")
+print("Share (8): Emergency Stop")
+print("Options (9): Pause/Unpause")
+print("A (0): Start/Stop Recording")
+print("B (1): Switch Label")
+print("Y (2): Toggle Preview")
+print("LB (6): Lift Arm")
+print("LT (4): Lower Arm")
+print("RB (7): Open Claw")
+print("RT (5): Close Claw")
 print("Left Stick Y: Forward/Backward")
 print("Right Stick X: Turn Left/Right")
 print("================\n")
@@ -131,14 +131,16 @@ try:
         # Process gamepad input - MUST process events every frame
         for e in pygame.event.get():
             if e.type == pygame.JOYBUTTONDOWN:
+                button_pressed = e.button  # ✅ Get the button that triggered this event
+                
                 # Emergency stop
-                if js.get_button(params["stop_btn"]):
+                if button_pressed == params["stop_btn"]:
                     is_stopped = True
                     print("E-STOP PRESSED. TERMINATE")
                     break
                 
                 # Pause/unpause
-                elif js.get_button(params["pause_btn"]):
+                elif button_pressed == params["pause_btn"]:
                     is_paused = not is_paused
                     if is_paused:
                         is_recording = False
@@ -150,44 +152,44 @@ try:
                     print(f"Paused: {is_paused}")
                 
                 # Toggle recording
-                elif js.get_button(params["record_btn"]) and not is_paused:
+                elif button_pressed == params["record_btn"] and not is_paused:
                     is_recording = not is_recording
                     print(f"Recording: {is_recording} | Label: {current_label}")
                 
                 # Change label
-                elif js.get_button(params["label_switch_btn"]):
+                elif button_pressed == params["label_switch_btn"]:
                     current_label_index = (current_label_index + 1) % len(LABELS)
                     current_label = LABELS[current_label_index]
                     print(f"\n=== LABEL CHANGED TO: {current_label} ===\n")
                 
                 # Toggle preview
-                elif js.get_button(params["preview_btn"]):
+                elif button_pressed == params["preview_btn"]:
                     show_preview = not show_preview
                     if not show_preview:
                         cv.destroyAllWindows()
                     print(f"Preview: {show_preview}")
                 
                 # Arm controls - lift
-                elif js.get_button(params["arm_lift_btn"]) and not is_paused:
+                elif button_pressed == params["arm_lift_btn"] and not is_paused:
                     sho_vel = -params["arm_speed"]
                     arm_state = 20  # Active control mode
                     print("Lifting arm")
                 
                 # Arm controls - lower
-                elif js.get_button(params["arm_lower_btn"]) and not is_paused:
+                elif button_pressed == params["arm_lower_btn"] and not is_paused:
                     sho_vel = params["arm_speed"]
                     arm_state = 20  # Active control mode
                     print("Lowering arm")
                 
                 # Claw controls - open
-                elif js.get_button(params["claw_open_btn"]) and not is_paused:
-                    cla_vel = -params["claw_speed"]
+                elif button_pressed == params["claw_open_btn"] and not is_paused:
+                    cla_vel = params["claw_speed"]
                     arm_state = 20  # Active control mode
                     print("Opening claw")
                 
                 # Claw controls - close
-                elif js.get_button(params["claw_close_btn"]) and not is_paused:
-                    cla_vel = params["claw_speed"]
+                elif button_pressed == params["claw_close_btn"] and not is_paused:
+                    cla_vel = -params["claw_speed"]
                     arm_state = 20  # Active control mode
                     print("Closing claw")
             
