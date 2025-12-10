@@ -66,7 +66,7 @@ try:
             f"mode: {mode}, action: {act_lin, act_ang, act_close, act_lower}"
         )  # debug
         # 20Hz
-        sleep(0.05)
+        sleep(0.01)
 
 # Take care terminal signal (Ctrl-c)
 except KeyboardInterrupt:
