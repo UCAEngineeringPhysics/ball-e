@@ -65,7 +65,7 @@ try:
             mode = "e"
         else:
             mode = "d"
-        msg = f"{act_lin}, {act_ang}, {act_lower}, {act_close}\n".encode("utf-8")
+        msg = f"{act_lin}, {act_ang}, {act_close}, {act_lower}\n".encode("utf-8")
         if not act_ang == 0.0 or not act_lin == 0.0:
             messenger.write(msg)
         # Log action

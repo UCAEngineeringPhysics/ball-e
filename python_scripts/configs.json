@@ -1,7 +1,10 @@
 {
     "ang_joy_axis": 0,
     "lin_joy_axis": 1,
-    "enable_btn": 4,
+    "lower_button": 0,
+    "raise_button": 2,
+    "close_button": 3,
+    "open_button": 4,
     "stop_btn": 0,
     "ang_vel_max": 1.5,
     "lin_vel_max": 0.5,
