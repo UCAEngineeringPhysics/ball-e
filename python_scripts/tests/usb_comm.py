@@ -11,9 +11,9 @@ for i in range(100):
         in_msg = messenger.readline().strip().decode("utf-8", "ignore")
         print(f"{dev_name} recieved: {in_msg}")
     if 25 <= i < 75:
-        out_msg = "0.4, 0.0\n"
+        out_msg = "0.4, 0.0, -1, 1\n"
     else:
-        out_msg = "0.0, 0.0\n"
+        out_msg = "0.0, 0.0, 1, -1\n"
     messenger.write(out_msg.encode("utf-8"))
     sleep(0.05)
 print("All messages sent.")

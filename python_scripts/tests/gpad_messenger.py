@@ -21,6 +21,7 @@ js = pygame.joystick.Joystick(0)
 # Init joystick axes values
 ax_val_ang = 0.0
 ax_val_lin = 0.0
+act_lower, act_close = 0, 0
 # Flags, ordered by priority
 is_stopped = False
 is_enabled = True
@@ -37,8 +38,17 @@ try:
                     pygame.quit()
                     messenger.close()
                     sys.exit()
-                elif js.get_button(params["enable_btn"]):
-                    is_enabled = not is_enabled
+                elif js.get_button(params["lower_button"]):
+                    act_lower = 1
+                elif js.get_button(params["raise_button"])
+                    act_lower = -1
+                elif js.get_button(params["close_button"]):
+                    act_close = 1
+                elif js.get_button(params["open_button"])
+                    act_close = -1
+                else:
+                    act_lower = 0
+                    act_close = 0
             elif e.type == pygame.JOYAXISMOTION:
                 ax_val_ang = round(
                     (js.get_axis(params["ang_joy_axis"])), 1
@@ -55,7 +65,7 @@ try:
             mode = "e"
         else:
             mode = "d"
-        msg = f"{act_lin}, {act_ang}\n".encode("utf-8")
+        msg = f"{act_lin}, {act_ang}, {act_lower}, {act_close}\n".encode("utf-8")
         if not act_ang == 0.0 or not act_lin == 0.0:
             messenger.write(msg)
         # Log action
