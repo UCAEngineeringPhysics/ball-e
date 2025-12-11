@@ -125,10 +125,10 @@ def app_callback(pad, info, user_data):
         if 0 <= user_data.picker_counter <= 210:
             user_data.latest_msg = "0.0, 0.0, 3000, 0, 0\n".encode('utf-8')  # lower
             user_data.picker_counter += 1
-        elif 210 < user_data.picker_counter <= 290:
+        elif 210 < user_data.picker_counter <= 295:
             user_data.latest_msg = "0.0, 0.0, 0, 3000, 0\n".encode('utf-8')  # close
             user_data.picker_counter += 1
-        elif 290 < user_data.picker_counter <= 470:
+        elif 295 < user_data.picker_counter <= 470:
             user_data.latest_msg = "0.0, 0.0, -3000, 0, 0\n".encode('utf-8')  # raise
             user_data.picker_counter += 1
         else:
@@ -155,17 +155,17 @@ def app_callback(pad, info, user_data):
         if 0 <= user_data.fixed_travel_counter < 570:
             user_data.latest_msg = "0.2, 0.0, 0, 0, 10\n".encode('utf-8')
             user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 570:
+        if user_data.fixed_travel_counter >= 500:
             user_data.mode = "detect"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
         #string_to_print += (f"Fixed travel counts: {user_data.fixed_travel_counter}\n")  # debug
 
     elif user_data.mode == "swivel_small_left":
-        if 0 <= user_data.fixed_travel_counter < 230:
-            user_data.latest_msg = "0.0, 0.2, 0, 0, 0\n".encode('utf-8')
+        if 0 <= user_data.fixed_travel_counter < 130:
+            user_data.latest_msg = "0.0, 0.3, 0, 0, 0\n".encode('utf-8')
             user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 230:
+        if user_data.fixed_travel_counter >= 130:
             user_data.mode = "fixed_bucket"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
@@ -173,10 +173,10 @@ def app_callback(pad, info, user_data):
 
             
     elif user_data.mode == "swivel_large_right":
-        if 0 <= user_data.fixed_travel_counter < 495:
-            user_data.latest_msg = "0.0, -0.2, 0, 0, 0\n".encode('utf-8')
+        if 0 <= user_data.fixed_travel_counter < 370:
+            user_data.latest_msg = "0.0, -0.3, 0, 0, 0\n".encode('utf-8')
             user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 495:
+        if user_data.fixed_travel_counter >= 370:
             user_data.mode = "fixed_ball"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
@@ -191,6 +191,19 @@ def app_callback(pad, info, user_data):
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
         #string_to_print += (f"Fixed travel counts: {user_data.fixed_travel_counter}\n")  # debug
+
+                    #user_data.arm_state = "lower"
+                    #user_data.mode = "drop"
+
+    elif user_data.mode == "fixed_drop":
+        if 0 <= user_data.fixed_travel_counter < 127:
+            user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode('utf-8')
+            user_data.fixed_travel_counter += 1
+        if user_data.fixed_travel_counter >= 127:
+            user_data.arm_state = "lower"
+            user_data.mode = "drop"
+            user_data.fixed_travel_counter = 0
+            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
 
 
     elif user_data.mode == "fixed_back":
@@ -242,24 +255,29 @@ def app_callback(pad, info, user_data):
                 # if Z > 2.4:
                 if user_data.distance >= 3.5:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, 0.5, 0, 0, 0\n".encode('utf-8')
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, -0.5, 0, 0, 0\n".encode('utf-8')
                     else:
-                        user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, 0.0, 0, 0, 0\n".encode('utf-8')
+                    string_to_print += (f"X Center:{user_data.distance}\n")
+
                 # elif Z <= 2.4 and Z > 1.0:
-                elif 1.765 < user_data.distance <= 3.0:
+                elif 1.35 < user_data.distance <= 3.0:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.5:
-                        user_data.latest_msg = "0.1, -0.5, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.4, 0.5, 0, 0, 0\n".encode("utf-8")
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.1, 0.5, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.4, -0.5, 0, 0, 0\n".encode("utf-8")
                     else:
-                        user_data.latest_msg = "0.1, 0.0, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.4, 0.0, 0, 0, 0\n".encode("utf-8")
+                    string_to_print += (f"X Center:{user_data.distance}\n")
+
                 else:
                     # Stop wheels and start arm sequence only once
                     user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
-                    user_data.arm_state = "lower"
-                    user_data.mode = "drop"
+                    user_data.mode = "fixed_drop"
+                    #user_data.arm_state = "lower"
+                    #user_data.mode = "drop"
         else:  # no detection
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()          
                   
@@ -302,19 +320,19 @@ def app_callback(pad, info, user_data):
                 # if Z > 2.4:
                 if user_data.distance >= 2.4:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, 0.5, 0, 0, 0\n".encode('utf-8')
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, -0.5, 0, 0, 0\n".encode('utf-8')
                     else:
-                        user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "0.4, 0.0, 0, 0, 0\n".encode('utf-8')
                 # elif Z <= 2.4 and Z > 1.0:
                 elif 1.258 < user_data.distance <= 2.4:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "0.1, 0.5, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode("utf-8")
                     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.1, -0.5, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode("utf-8")
                     else:
-                        user_data.latest_msg = "0.1, 0.0, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode("utf-8")
                 else:
                     # Stop wheels and start arm sequence only once
                     user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
