@@ -1,0 +1,13 @@
+{
+    "ang_joy_axis": 0,
+    "lin_joy_axis": 1,
+    "lower_button": 0,
+    "raise_button": 2,
+    "close_button": 3,
+    "open_button": 1,
+    "ang_vel_max": 1.5,
+    "lin_vel_max": 0.5,
+    "frame_rate": 24,
+    "start_stop_collection": 4,
+    "stop_program": 8
+}
