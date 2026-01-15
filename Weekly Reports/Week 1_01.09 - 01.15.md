@@ -1,8 +1,8 @@
 # ELIZABETH
 ## DONE
 - Created project timeline sheet for Spring Semester
+  ![TIMELINE](https://github.com/UCAEngineeringPhysics/ball-e/blob/main/SrDesignTimeline2.png)
 - Added battery to parts list and began researching new wheels
-![TIMELINE](SrDesignTimeline2.png)
 
 ## TODO
 - Find wheels and add to list
