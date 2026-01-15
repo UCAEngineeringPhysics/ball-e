@@ -1,0 +1,25 @@
+1. Look up librealsense on github
+
+2. Go to doc and then installation.md
+
+3. Now we install the dependencies and the first 2 steps in librealsense 2.
+
+4. Run: sudo apt install libudev-dev
+
+5. Now go to scripts and open libuvc_installation.sh
+
+6. Copy and past line 42 in the code and run that in the terminal
+
+7. Then copy lines 45 and 46 and paste it into the terminal.
+
+8. Go to wrappers then go to python. In the read me there is the options in the ubuntu steps. This is in building from source, find the third option under #4 (Configure and make) copy line in front of “cmake ../”
+
+9. Paste those in the terminal after the lines already pasted from step 7
+
+10. Run this whole command in the terminal.
+
+11. After this go back to wrappers and then python. Copy the line under “cmake../” The line should say “make -j4”. Copy this into the terminal and then type some stuff.
+
+12. The whole command in the terminal should be “make -j4 && sudo make install”
+
+13. Now we can run “realsense-viewer”
