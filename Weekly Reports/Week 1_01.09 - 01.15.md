@@ -7,7 +7,6 @@
 ## TODO
 - Find wheels and add to list
 - Potentially draft psudo code to remove encoder portions of autonomous navigation code from last semester
-  file:///C:/Users/eliza/Downloads/Sr.%20Design%20Timeline2.pdf
 
 # MISIA
 ### DONE
