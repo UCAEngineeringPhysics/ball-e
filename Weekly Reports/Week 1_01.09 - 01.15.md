@@ -2,6 +2,7 @@
 ## DONE
 -Created project timeline sheet for Spring Semester
 -Added battery to parts list and began researching new wheels
+![TIMELINE](Sr. Design Timeline2.png)
 
 ## TODO
 - Find wheels and add to list
