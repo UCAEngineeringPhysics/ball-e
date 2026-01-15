@@ -1,25 +1,25 @@
 # ELIZABETH
 ### DONE
 -
-## TODO
+### TODO
 -
 
 # MISIA
-## DONE
+### DONE
 -
-## TODO
+### TODO
 -
 
 
 # CALEB
-## DONE
+### DONE
 -
-## TODO
+### TODO
 -
 
 
 # ERIC
-## DONE
+### DONE
 -
-## TODO
+### TODO
 -
