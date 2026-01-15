@@ -24,6 +24,6 @@
 
 # ERIC
 ### DONE
--
+- Downloaded all librealsense libraries
 ### TODO
--
+- Implement d455 realsense camera with previous code 
