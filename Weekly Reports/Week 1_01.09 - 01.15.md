@@ -13,9 +13,11 @@
 
 # MISIA
 ### DONE
--
+- Created folder with for weekly reports on GitHub for better organization.
+- Started drafting the design for a camera holder.
 ### TODO
--
+- Design and print the camera holder.
+- Start designing claw extentions to eliminate issues with grabbing the balls.
 
 
 # CALEB
