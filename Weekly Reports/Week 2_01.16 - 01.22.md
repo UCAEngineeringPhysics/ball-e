@@ -9,7 +9,13 @@
 - Continue working on getting object detection model running on AI Hat to recieve and process frame data from Realsense camera.
   
 # MISIA
+## DONE
+- Made a 3D design for a mount for realsense d455 camera
+- Started the design print
 
+## TO DO
+- Make any possibly needed changes to the camera mmount design
+- Start designing 3D claw extension
 
 # CALEB
 
