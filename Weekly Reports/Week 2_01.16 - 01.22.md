@@ -21,3 +21,8 @@
 
 
 # ERIC
+## DONE
+- Experimented with realsense and pyrealsense libraries
+
+## TO DO 
+- Continue work with realsense d455 camera
