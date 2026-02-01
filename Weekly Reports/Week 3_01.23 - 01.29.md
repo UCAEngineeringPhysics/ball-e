@@ -17,7 +17,8 @@
 - Start improving the design for the base
 
 # CALEB
-
+> [!TIP]
+> No one wants to type report for you, cap 😆
 
 # ERIC
 ## DONE
