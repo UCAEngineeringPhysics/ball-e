@@ -31,3 +31,8 @@ python detection.py --input /dev/video0  # realsense rgb camera usually plays as
 
 
 # ERIC
+## DONE
+- Experimented with realsense and pyrealsense libraries
+
+## TO DO 
+- Continue work with realsense d455 camera
