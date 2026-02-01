@@ -16,6 +16,10 @@
 - Discuss the design for the claw with team captain
 - Start improving the design for the base
 
+> [!IMPORTANT]
+> Please be more specific on what changes are going to make to the camera mount and what improvements you've planned for the base.
+> -2.
+
 # CALEB
 > [!TIP]
 > No one wants to type report for you, cap 😆
@@ -26,3 +30,7 @@
 
 ## TO DO 
 - Continue work with intel realsense d455 camera
+
+> [!IMPORTANT]
+> Please be more specific.
+> -2.
