@@ -120,10 +120,8 @@ def app_callback(pad, info, user_data):
                     user_data.latest_msg = "0.0, 0.0, 0, 0,10\n".encode('utf-8')
                     user_data.arm_state = "idle" 
                     user_data.picker_counter = 0  
-                    user_data.fixed_travel_counter = 0
                     user_data.mode = "detect"
-
-
+                    user_data.fixed_travel_counter = 0
 
     elif user_data.mode == "detect":
 
