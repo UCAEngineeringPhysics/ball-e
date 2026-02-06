@@ -9,7 +9,14 @@
 - Add Eric's RealSense distance measuring code to navigation code mentioned previously and test performance.
 
 # MISIA
+## DONE 
+- Updated the design for the camera holder. Fixed the measurments for two parts to fit better together
+- Made a design for a supporting beam for camera holder
+- Started drafting updates for the base design
 
+## TO DO
+- Print updated part for the camera mount
+- Focuse on making changes to the base design and potentially start printing 
 
 # CALEB
 
