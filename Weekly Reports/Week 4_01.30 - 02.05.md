@@ -18,10 +18,17 @@
 - Print updated part for the camera mount
 - Focuse on making changes to the base design and potentially start printing 
 
+> [!TIP]
+> No need to write out if the plan is just "potential".
+
 # CALEB
 
 
 # ERIC
 TODO: Test 
+
+> [!IMPORTANT]
+> Sorry, but "TODO: Test" is just too general. -2
+
 
 COMPLETED: Integrated distance measuring to d455 camera with object detection.  
