@@ -9,7 +9,14 @@
 - Run ground tests of entire course using last semester's code (but now with Realsense for object detection, new claw, and new PCB).
 
 # MISIA
+## DONE
+- Drafted the design for updating the base design.
+- Drew out new camera mount and battery holder.
+![DRAFT](design.png)
 
+## TODO
+- Make a Fusion360 design for half of the new base.
+- Make a new design for motor holders, so they're easier to put in and take out.
 
 # CALEB
 ## DONE
