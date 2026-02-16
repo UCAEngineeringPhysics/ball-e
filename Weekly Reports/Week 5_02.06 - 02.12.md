@@ -12,7 +12,12 @@
 ## DONE
 - Drafted the design for updating the base design.
 - Drew out new camera mount and battery holder.
-![DRAFT](design.png)
+![DRAFT](/design.png)
+
+> [!NOTE]
+> [DRAFT](/design.png) link fixed, needs absolute path: `![DRAFT](/design.png)`.
+> You may want to create a dedicated folder for storing your drafts/skethces.
+
 
 ## TODO
 - Make a Fusion360 design for half of the new base.
@@ -27,5 +32,8 @@
 
 ## TO DO
 - Collect new data for object detection model using image collection code on Realsense camera and controller navigation.
+
+> [!NOTE]
+> Good job guys! I've reserved the basketball court 3 Wednesday night from 5 to 7:30 for practice.
 
 # ERIC
