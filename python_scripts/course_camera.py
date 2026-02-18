@@ -88,14 +88,14 @@ def app_callback(pad, info, user_data):
         if user_data.arm_state == "lower":
             user_data.latest_msg = "0.0, 0.0, 3000, 0, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 210:
+            if user_data.picker_counter >= 195:
                 user_data.arm_state = "close"
                 user_data.picker_counter = 0
                 
         elif user_data.arm_state == "close":
             user_data.latest_msg = "0.0, 0.0, 0, 3000, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 70:
+            if user_data.picker_counter >= 150:
                 user_data.arm_state = "raise"
                 user_data.picker_counter = 0
                 
@@ -134,17 +134,17 @@ def app_callback(pad, info, user_data):
                     user_data.fixed_travel_counter = 0
             
     elif user_data.mode == "fixed_ball":
-        user_data.latest_msg = "0.35, 0.0, 0, 0, 10\n".encode('utf-8')
+        user_data.latest_msg = "-0.30, 0.0, 0, 0, 10\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 150: #460
+        if user_data.fixed_travel_counter >= 250: #460
             user_data.mode = "detect"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
 
     elif user_data.mode == "fixed_bucket":
-        user_data.latest_msg = "0.35, 0.0, 0, 0, 0\n".encode('utf-8')
+        user_data.latest_msg = "-0.30, 0.0, 0, 0, 0\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 150: #
+        if user_data.fixed_travel_counter >= 160: #
             user_data.mode = "detect_bucket"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
@@ -169,13 +169,13 @@ def app_callback(pad, info, user_data):
                 # focal length in pixels
                 f_pixels = 3386.0
                 # Height of bucket
-                H_real = 0.381  # meters
+                H_real = 0.1524  # meters
                 # Distance from camera to bucket
                 # Z = (f_pixels * H_real) / h_pixels
                 user_data.distance = (f_pixels * H_real) / h_pixels
 
                 # Get track ID
-                user_data.vel = 0.4
+                user_data.vel = -0.4
                 track_id = 0
                 track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
                 if len(track) == 1:
@@ -184,22 +184,22 @@ def app_callback(pad, info, user_data):
                 string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
 
                 # if Z > 5.0:
-                if user_data.distance >= 5.0:            
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                        user_data.latest_msg = "0.2, 0.5,0, 0, 0\n".encode('utf-8')
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.2, -0.5,0, 0, 0\n".encode('utf-8')
+                if user_data.distance >= 9.0:            
+                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
+                        user_data.latest_msg = "-0.2, -0.5,0, 0, 0\n".encode('utf-8')
+                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                        user_data.latest_msg = "-0.2, 0.5,0, 0, 0\n".encode('utf-8')
                     else:
-                        user_data.latest_msg = "0.35, 0.0,0, 0, 0\n".encode('utf-8')
+                        user_data.latest_msg = "-0.35, 0.0,0, 0, 0\n".encode('utf-8')
 
                 # elif Z <= 3.5 and Z > 5.0:
-                elif 3.5 < user_data.distance <= 5.0:
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.5:
-                        user_data.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode("utf-8")
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                        user_data.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode("utf-8")
+                elif 4.3 < user_data.distance <= 9.0:
+                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
+                        user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode("utf-8")
+                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                        user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode("utf-8")
                     else:
-                        user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode("utf-8")
+                        user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode("utf-8")
 
                 else:
                     # Stop wheels and start arm sequence only once
@@ -225,7 +225,7 @@ def app_callback(pad, info, user_data):
 
                 if "bucket" not in label:   
                     print("bucket not in label")         
-                    user_data.vel = max(user_data.vel - 0.05, 0.0)
+                    user_data.vel = max(user_data.vel + 0.05, 0.0)
                     user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')               
                 else:
                     # Get bounding box height in pixels
@@ -239,7 +239,7 @@ def app_callback(pad, info, user_data):
                     user_data.distance = (f_pixels * H_real) / h_pixels
 
                     # Get track ID
-                    user_data.vel = 0.4
+                    user_data.vel = -0.4
                     track_id = 0
                     track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
                     if len(track) == 1:
@@ -249,19 +249,19 @@ def app_callback(pad, info, user_data):
                     # if Z > 2.4:
                     if user_data.distance >= 7.0:
                         if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                            user_data.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode('utf-8')
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                            user_data.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode('utf-8')
+                            user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode('utf-8')
+                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                            user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode('utf-8')
                         else:
-                            user_data.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode('utf-8')
+                            user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode('utf-8')
                     # elif Z <= 2.4 and Z > 1.0:
-                    elif 4.0 < user_data.distance <= 7.0:
-                        if (bbox.xmin() + bbox.xmax()) / 2 < 0.5:
-                            user_data.latest_msg = "0.1, 0.5, 0, 0, 0\n".encode("utf-8")
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                            user_data.latest_msg = "0.1, -0.5, 0, 0, 0\n".encode("utf-8")
+                    elif 3.6 < user_data.distance <= 7.0:
+                        if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
+                            user_data.latest_msg = "-0.1, -0.5, 0, 0, 0\n".encode("utf-8")
+                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                            user_data.latest_msg = "-0.1, 0.5, 0, 0, 0\n".encode("utf-8")
                         else:
-                            user_data.latest_msg = "0.1, 0.0, 0, 0, 0\n".encode("utf-8")
+                            user_data.latest_msg = "-0.1, 0.0, 0, 0, 0\n".encode("utf-8")
                     else:
                         # Stop wheels and start arm sequence only once
                         user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
