@@ -7,7 +7,14 @@
 ## TO DO
 
 # MISIA
+## DONE
+- Made a presentation for a capstone meeting.
+- Annotated new set of picture for training.
+- Designed a new battery holder.
 
+## TO DO
+- Design new base.
+- Design new camera holder.
 
 # CALEB
 
