@@ -19,9 +19,10 @@
 
 # CALEB
 ### DONE
--
+- Made a backup branch to save and separate progress from last semester on Github
+  
 ### TODO
--
+- 
 
 
 # ERIC
