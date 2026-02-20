@@ -19,7 +19,13 @@
 - Focuse on making changes to the base design and potentially start printing 
 
 # CALEB
+## DONE
+- designed first iteration of the new claw
+- attached the camera to the new mount
 
+## TO DO
+- Change image collection code to work with new camera
+- Improve the claw design
 
 # ERIC
 TODO: Test 
