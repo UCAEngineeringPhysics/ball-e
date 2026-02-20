@@ -19,6 +19,13 @@
 - Design new camera holder.
 
 # CALEB
+## DONE
+- Collected image data from HPER center and parking log
+- Annotated images from HPER center set and parking lot set
 
+## TO DO
+- Aid in new base design
+- Add depth measurements to image collection
+- continue improving image collection code
 
 # ERIC
