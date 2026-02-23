@@ -22,7 +22,13 @@
 > No need to write out if the plan is just "potential".
 
 # CALEB
+## DONE
+- designed first iteration of the new claw
+- attached the camera to the new mount
 
+## TO DO
+- Change image collection code to work with new camera
+- Improve the claw design
 
 # ERIC
 TODO: Test 

@@ -51,8 +51,8 @@ class ArmController:
     def close_claw(self, dc_inc=0):  # Close claw
         assert -50_000 <= dc_inc <= 50_000
         self.claw_duty += dc_inc
-        if self.claw_duty >= 2_050_000:
-            self.claw_duty = 2_050_000
+        if self.claw_duty >= 2_500_000:
+            self.claw_duty = 2_500_000
         elif self.claw_duty <= 1_550_000:
             self.claw_duty = 1_550_000
         self.claw_servo.duty_ns(self.claw_duty)
@@ -63,8 +63,8 @@ if __name__ == "__main__":
     from utime import sleep
 
     sleep(1)
-    ac = ArmController(12, 13, 14)
-    for _ in range(40):
+    ac = ArmController(15, 13, 14)
+    for _ in range(80):
         ac.close_claw(10_000)
         sleep(0.1)
         print(f"Closing claw duty cycle: {ac.claw_duty}")
