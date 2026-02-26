@@ -173,15 +173,27 @@ def main():
                         if dist == 0: # Backup math if depth fails
                             dist = (3386.0 * 0.1524) / ((bbox.ymax() - bbox.ymin()) * 480)
 
-                        # Steering Logic
-                        center_x = (bbox.xmin() + bbox.xmax()) / 2
-                        if dist >= 1.2:
-                            turn = 0.5 if center_x < 0.4 else (-0.5 if center_x > 0.7 else 0.0)
-                            robot.latest_msg = f"0.1, {turn}, 0, 0, 0\n".encode()
+                        # if Z > 2.4:
+                        if dist >= 2.4:
+                            if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
+                                robot.latest_msg = "0.2, 0.5, 0, 0, 0\n".encode('utf-8')
+                            elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
+                                robot.latest_msg = "0.2, -0.5, 0, 0, 0\n".encode('utf-8')
+                            else:
+                                robot.latest_msg = "0.2, 0.0, 0, 0, 0\n".encode('utf-8')
+                        # elif Z <= 2.4 and Z > 1.0:
+                        elif 1.258 < dist.distance <= 2.4:
+                            if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
+                                robot.latest_msg = "0.1, 0.5, 0, 0, 0\n".encode("utf-8")
+                            elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
+                                robot.latest_msg = "0.1, -0.5, 0, 0, 0\n".encode("utf-8")
+                            else:
+                                robot.latest_msg = "0.1, 0.0, 0, 0, 0\n".encode("utf-8")
                         else:
+                            # Stop wheels and start arm sequence only once
                             robot.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
-                            robot.mode = "pick"
                             robot.arm_state = "lower"
+                            robot.mode = "pick"
 
                         # Draw on screen
                         cv2.rectangle(img_display, (int(bbox.xmin()*640), int(bbox.ymin()*480)), 
