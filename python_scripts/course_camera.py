@@ -88,7 +88,7 @@ def app_callback(pad, info, user_data):
         if user_data.arm_state == "lower":
             user_data.latest_msg = "0.0, 0.0, 3000, 0, 0\n".encode('utf-8')
             user_data.picker_counter += 1
-            if user_data.picker_counter >= 179:
+            if user_data.picker_counter >= 160:
                 user_data.arm_state = "close"
                 user_data.picker_counter = 0
                 
@@ -136,7 +136,7 @@ def app_callback(pad, info, user_data):
     elif user_data.mode == "fixed_ball":
         user_data.latest_msg = "-0.30, 0.0, 0, 0, 10\n".encode('utf-8')
         user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 500: #460
+        if user_data.fixed_travel_counter >= 260: #460
             user_data.mode = "detect"
             user_data.fixed_travel_counter = 0
             user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
@@ -209,20 +209,20 @@ def app_callback(pad, info, user_data):
                 string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
 
                 # if Z > 5.0:
-                if user_data.distance >= 9.0:            
+                if user_data.distance >= 9.0:            #9.0
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "-0.2, -0.5,0, 0, 0\n".encode('utf-8')
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
                         user_data.latest_msg = "-0.2, 0.5,0, 0, 0\n".encode('utf-8')
+                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                        user_data.latest_msg = "-0.2, -0.5,0, 0, 0\n".encode('utf-8')
                     else:
                         user_data.latest_msg = "-0.35, 0.0,0, 0, 0\n".encode('utf-8')
 
-                # elif Z <= 3.5 and Z > 5.0:
-                elif 4.6 < user_data.distance <= 9.0:
+                # elif Z <= 4.6 and Z > 9.0:
+                elif 5.9 < user_data.distance <= 9.0:
                     if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode("utf-8")
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
                         user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode("utf-8")
+                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                        user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode("utf-8")
                     else:
                         user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode("utf-8")
 
@@ -247,12 +247,8 @@ def app_callback(pad, info, user_data):
                     label = detection.get_label()
                     bbox = detection.get_bbox()
                     confidence = detection.get_confidence()
-
-                if "bucket" not in label:   
-                    print("bucket not in label")         
-                    user_data.vel = max(user_data.vel + 0.05, 0.0)
-                    user_data.latest_msg = f"{user_data.vel}, 0.0\n".encode('utf-8')               
-                else:
+           
+                if "bucket" in label:
                     # Get bounding box height in pixels
                     h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
                     # focal length in pixels
@@ -274,17 +270,17 @@ def app_callback(pad, info, user_data):
                     # if Z > 2.4:
                     if user_data.distance >= 7.0:
                         if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                            user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode('utf-8')
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
                             user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode('utf-8')
+                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                            user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode('utf-8')
                         else:
                             user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode('utf-8')
                     # elif Z <= 2.4 and Z > 1.0:
-                    elif 3.0 < user_data.distance <= 7.0:
+                    elif 5.5 < user_data.distance <= 7.0:
                         if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                            user_data.latest_msg = "-0.1, -0.5, 0, 0, 0\n".encode("utf-8")
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
                             user_data.latest_msg = "-0.1, 0.5, 0, 0, 0\n".encode("utf-8")
+                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
+                            user_data.latest_msg = "-0.1, -0.5, 0, 0, 0\n".encode("utf-8")
                         else:
                             user_data.latest_msg = "-0.1, 0.0, 0, 0, 0\n".encode("utf-8")
                     else:
