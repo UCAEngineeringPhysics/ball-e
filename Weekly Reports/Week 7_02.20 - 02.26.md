@@ -20,6 +20,13 @@
 - Design a camera holder.
 
 # CALEB
+## DONE
+- created my own version of the autonomous code
+- Put the new PLA Tough+ base piece on
+- 
 
+## TODO
+- Collect more data
+- Setup date to go to Petit Jean and collect data
 
 # ERIC
