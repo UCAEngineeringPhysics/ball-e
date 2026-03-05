@@ -1,5 +1,9 @@
 # ELIZABETH
-
+## DONE
+- Worked through annotating two smaller data sets.
+- Helped collect a set of data at tennis courts.
+## TO DO
+- Begin drafting simple odometry script based on competition course to implement into current navigation code.
 
 # MISIA
 
