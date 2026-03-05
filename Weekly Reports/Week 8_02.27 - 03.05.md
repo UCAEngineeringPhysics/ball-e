@@ -6,7 +6,15 @@
 - Begin drafting simple odometry script based on competition course to implement into current navigation code.
 
 # MISIA
+## DONE
+- Annotated more data
+- Redesigned the base to fit the aluminum frame
+- Got test base printed
 
+## TO DO
+- Design and print camera holder
+- Print Battery holder
+- Annotate more images
 
 # CALEB
 ## DONE
