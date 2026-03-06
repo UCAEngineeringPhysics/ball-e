@@ -51,7 +51,10 @@ cp ../runs/detect/bucket_yolov8s/weights/best.onnx ./bucket_detector.onnx
 Use the Hailo Model Zoo command (this can take up to 30 minutes):
 
 ```bash
-hailomz compile yolov8s --ckpt=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/balbuc_yolov8m/weights/best.onnx --hw-arch hailo8 --calib-path /local/workspace/datasets/balbuc_dataset/test/images/ --classes 8 --performance
+hailomz compile yolov8m --ckpt=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/balbuc_yolov8m/weights/best.onnx --hw-arch hailo8 --calib-path /local/workspace/datasets/balbuc_dataset/test/images/ --classes 8 --performance
 ```
-Now, we have the `yolov8m.hef`. 
+> [!NOTE]
+> This will take quite a while.
+> Make a coffee, stretch your legs.
+> But after the conversion,you will get the `yolov8m.hef` in current directory.
 This is the model file can be used on the Hailo AI HAT on top of Raspberry Pi 5.
