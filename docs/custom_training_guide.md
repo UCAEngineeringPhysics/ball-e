@@ -41,8 +41,8 @@ yolo export model=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/b
 ## Copy the ONNX to a dedicated directory
 
 ```bash
-cd /local/workspace/hailo_model_zoo/training/yolov8/bucket_models
-cp ../runs/detect/bucket_yolov8s/weights/best.onnx ./bucket_detector.onnx
+cd /local/workspace/hailo_model_zoo/training/yolov8/ball-e_models
+cp ../runs/detect/balbuc_yolov8m/weights/best.onnx ./bucket_detector.onnx
 ```
 
 
