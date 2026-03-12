@@ -35,7 +35,7 @@ from simple_odometry import SimpleOdometry # Assuming you saved the odometry cla
 #***********
 
 # Local state machine: best detection, distance depth/geometry, mode handlers
-from state_machine import (
+from state_machine_el import (
     handle_pause,
     handle_pick,
     handle_drop,
@@ -48,7 +48,7 @@ from state_machine import (
     handle_detect_bucket,
 )
 
-GOAL_THRESHOLD_M = 0.3  # Standard tolerance for all goals
+GOAL_THRESHOLD_M = 0.5  # Standard tolerance for all goals
 
 # Define your starting angle (45 degrees converted to radians)
 # This assumes X-axis is the wall to your right and Y-axis is the wall behind you
@@ -183,8 +183,8 @@ class UserData:
                 pass
             sleep(0.02)
 
-        def stop(self):
-            self._running = False
+    def stop(self):
+        self._running = False
 
 
 # -----------------------------------------------------------------------------
@@ -192,13 +192,7 @@ class UserData:
 # -----------------------------------------------------------------------------
 def main():
 
-    # 1. Open the connection ONCE
-    try:
-        shared_ser = serial.Serial(port=args.port, baudrate=115200, timeout=0.01)
-        print(f"[SUCCESS] Connected to Pico on {args.port}")
-    except Exception as e:
-        print(f"[ERROR] Serial connection failed: {e}")
-        sys.exit(1)
+
 
     script_dir = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description="Autonomous course with depth + YOLO")
@@ -230,6 +224,15 @@ def main():
     parser.add_argument("--no-video-log", action="store_true", help="Disable POV video recording when --save-run is enabled")
     parser.add_argument("--video-fps", type=float, default=15.0, help="FPS for saved POV video")
     args = parser.parse_args()
+
+
+    # 1. Open the connection ONCE
+    try:
+        shared_ser = serial.Serial(port=args.port, baudrate=115200, timeout=0.01)
+        print(f"[SUCCESS] Connected to Pico on {args.port}")
+    except Exception as e:
+        print(f"[ERROR] Serial connection failed: {e}")
+        sys.exit(1)
 
     orig_stdout = sys.stdout
     orig_stderr = sys.stderr
@@ -322,7 +325,7 @@ def main():
     print("RealSense D455 started (color + depth).")
 
     # 2. Pass the SAME object to both classes
-    user_data = UserData(args.port) # Update your UserData class to accept an object, not a string
+    user_data = UserData(shared_ser) # Update your UserData class to accept an object, not a string
     tracker = SimpleOdometry(user_data.messenger, initial_theta=START_ANGLE)
     
     pico_thread = threading.Thread(target=user_data.send_loop, daemon=True)
@@ -364,12 +367,14 @@ def main():
            #**********ODOMETRY************** 
             # 1. Update Odometry Position
             tracker.update()
+            print(tracker.x, tracker.y)
             
             # 2. Sync CURRENT position only
             user_data.odom_x = tracker.x
             user_data.odom_y = tracker.y
             user_data.odom_th = tracker.th
-            user_data.goal_threshold = tune.GOAL_THRESHOLD_M # Keep this for reference
+            user_data.distance_traveled = tracker.get_distance_from_origin()
+            #user_data.goal_threshold = tune.GOAL_THRESHOLD_M # Keep this for reference
 
 
            #*************************************** 
@@ -391,7 +396,7 @@ def main():
                 handle_swivel_small_left(user_data)
             elif user_data.mode == "swivel_large_right":
                 handle_swivel_large_right(user_data)
-            elif user_data.mode == "detect":
+            elif user_data.mode == "detect_ball":
                 handle_detect_ball(
                     user_data,
                     detections,
@@ -413,7 +418,7 @@ def main():
                 handle_pause(user_data)
 
             # Optional: print mode and distance when in detect modes
-            if user_data.mode in ("detect", "detect_bucket") and detections:
+            if user_data.mode in ("detect_ball", "detect_bucket") and detections:
                 src = "depth" if getattr(user_data, "distance_from_depth", False) else "geom"
                 print(
                     f"[{user_data.mode}] dist={getattr(user_data, 'distance', 0):.2f}m ({src}) "
