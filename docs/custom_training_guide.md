@@ -51,7 +51,7 @@ cp ../runs/detect/balbuc_yolov8m/weights/best.onnx ./balbuc_detector.onnx
 Use the Hailo Model Zoo command (this can take up to 30 minutes):
 
 ```bash
-hailomz compile yolov8m --ckpt=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/balbuc_yolov8m/weights/best.onnx --hw-arch hailo8 --calib-path /local/workspace/datasets/balbuc_dataset/test/images/ --classes 8 --performance
+hailomz compile yolov8m --ckpt=/local/workspace/hailo_model_zoo/training/yolov8/ball-e_models/balbuc_detector.onnx --hw-arch hailo8 --calib-path /local/workspace/datasets/balbuc_dataset/test/images/ --classes 8 --performance
 ```
 > [!NOTE]
 > This will take quite a while.
