@@ -29,7 +29,7 @@ yolo detect train data=/local/workspace/datasets/balbuc_dataset/data.yaml model=
 
 ```bash
 ls /local/workspace/datasets/balbuc_dataset/valid/images  # use any jpg file for next step
-yolo predict task=detect source=/local/workspace/datasets/buckets_dataset/valid/images/IMG_4511_jpg.rf.a1ce9a90595b28c828cbe7cd098bca9d.jpg model=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/bucket_yolov8s/weights/best.pt
+yolo predict task=detect source=/local/workspace/datasets/balbuc_dataset/valid/images/<img_filename>.jpg model=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/balbuc_yolov8m/weights/best.pt
 ```
 
 ### Export the model to ONNX
