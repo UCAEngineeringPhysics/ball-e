@@ -31,7 +31,7 @@ class SimpleOdometry:
                 vels = line.split(",")
                 if len(vels) == 2:
                     # Assuming Pico sends m/s and rad/s
-                    self.lin_vel = float(vels[0]) 
+                    self.lin_vel = -float(vels[0]) 
                     self.ang_vel = float(vels[1])
             except (ValueError, IndexError):
                 pass
@@ -53,4 +53,3 @@ class SimpleOdometry:
     def get_distance_from_origin(self):
         """Calculates straight-line distance from starting corner."""
         return sqrt(self.x**2 + self.y**2)
-
