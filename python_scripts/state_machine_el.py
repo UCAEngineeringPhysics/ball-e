@@ -24,6 +24,15 @@ MIN_CONFIDENCE = tune.MIN_CONFIDENCE
 CONFIRM_FRAMES = tune.CONFIRM_FRAMES
 CLOSE_CONFIRM_FRAMES = tune.CLOSE_CONFIRM_FRAMES
 
+#Wrap angle function
+def _wrap_angle(angle):
+    while angle > pi:
+        angle -= 2 * pi
+    while angle < -pi:
+        angle += 2 * pi
+    return angle
+
+
 # Pico message format: "lin_vel, ang_vel, shoulder_cmd, claw_cmd, arm_state\n"
 # arm_state: 0 = idle, 10 = neutral/return
 def build_msg(lin_vel: float, ang_vel: float, shoulder: int, claw: int, arm_state: int = 0) -> bytes:
@@ -367,25 +376,33 @@ def handle_drop(ud) -> None:
 
 
 def handle_fixed_ball(ud) -> None:
-    """Drives toward the center (15, 15) feet."""
-    """Replaces FIXED_BUCKET_TRAVEL_FRAMES with spatial coordinates."""
 
     # 1. Target in m
     TARGET_X = 2.3
     TARGET_Y = 2.3
-    GOAL_THRESHOLD = 0.20
+    GOAL_THRESHOLD = 0.25
     
     # 2. Pull Gains from tune file (or hard-code)
     # Using 0.4 for linear and 1.2 for angular is a safe starting point
-    LIN_KP = getattr(tune, "NAV_LINEAR_KP", 0.4)
+    LIN_KP = getattr(tune, "NAV_LINEAR_KP", 0.6)
     ANG_KP = getattr(tune, "NAV_ANGULAR_KP", 1.2)
-    MAX_LIN = abs(getattr(tune, "BUCKET_SPEED_FAR", -0.30)) 
-    MAX_ANG = getattr(tune, "NAV_MAX_ANG_SPEED", 0.50)
+    MAX_LIN = abs(getattr(tune, "BALL_SPEED_FAR", -0.35)) 
+    MAX_ANG = getattr(tune, "NAV_MAX_ANG_SPEED", 1.6)
 
     # 3. Distance Math (in Feet)
     dx = TARGET_X - ud.odom_x
     dy = TARGET_Y - ud.odom_y
     dist_remaining = sqrt(dx**2 + dy**2)
+
+    #Create unit direction vector toward goal
+    ux = dx / max(dist_remaining, 1e-6)
+    uy = dy / max(dist_remaining, 1e-6)
+
+    #Create carrot point
+    LOOKAHEAD = 1.0  # meters
+
+    carrot_x = ud.odom_x + ux * LOOKAHEAD
+    carrot_y = ud.odom_y + uy * LOOKAHEAD
 
     # 4. Check for arrival
     if dist_remaining <= GOAL_THRESHOLD:
@@ -396,15 +413,21 @@ def handle_fixed_ball(ud) -> None:
         return
 
     # 5. Heading Correction (keep the nose pointed at the target while driving)
-    target_th = atan2(dy, dx)
-    heading_error = target_th - ud.odom_th
-    while heading_error > pi: heading_error -= 2 * pi
-    while heading_error < -pi: heading_error += 2 * pi
+    desired_heading = atan2(carrot_y - ud.odom_y, carrot_x - ud.odom_x)
+    heading_error = _wrap_angle(desired_heading - ud.odom_th)
 
     # 6. Compute Commands
     # Important: If your robot uses negative for forward, apply the sign here
-    lin_cmd = -_clamp(dist_remaining * LIN_KP, 0.12, MAX_LIN)
     ang_cmd = _clamp(heading_error * ANG_KP, -MAX_ANG, MAX_ANG)
+
+    # reduce forward speed when misaligned
+    heading_scale = max(0.0, 1.0 - abs(heading_error) / 1.2)
+
+    lin_cmd = _clamp(dist_remaining * LIN_KP, 0.12, MAX_LIN)
+    lin_cmd = -lin_cmd * heading_scale
+
+    if abs(heading_error) > 0.8:  # ~45°
+        lin_cmd = 0
 
     ud.latest_msg = build_msg(lin_cmd, ang_cmd, 0, 0, 0)
     print(
@@ -427,7 +450,7 @@ def handle_fixed_bucket(ud) -> None:
     # Using 0.4 for linear and 1.2 for angular is a safe starting point
     LIN_KP = getattr(tune, "NAV_LINEAR_KP", 0.4)
     ANG_KP = getattr(tune, "NAV_ANGULAR_KP", 1.2)
-    MAX_LIN = abs(getattr(tune, "BUCKET_SPEED_FAR", -0.30)) 
+    MAX_LIN = abs(getattr(tune, "BUCKET_SPEED_FAR", -0.35)) 
     MAX_ANG = getattr(tune, "NAV_MAX_ANG_SPEED", 0.50)
 
     # 3. Distance Math (in Feet)
@@ -474,7 +497,7 @@ def handle_swivel_small_left(ud) -> None:
     """
     # 1. Define Target in FEET (matches your SimpleOdometry class)
     TARGET_X = 0.0
-    TARGET_Y = 4.57
+    TARGET_Y = 2.3
     ANGLE_TOLERANCE = 0.05  # Approx 3 degrees
     
     # 2. Get gains and clamps from tune file (or hard-coded)
