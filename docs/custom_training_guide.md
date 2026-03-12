@@ -42,7 +42,7 @@ yolo export model=/local/workspace/hailo_model_zoo/training/yolov8/runs/detect/b
 
 ```bash
 cd /local/workspace/hailo_model_zoo/training/yolov8/ball-e_models
-cp ../runs/detect/balbuc_yolov8m/weights/best.onnx ./bucket_detector.onnx
+cp ../runs/detect/balbuc_yolov8m/weights/best.onnx ./balbuc_detector.onnx
 ```
 
 
