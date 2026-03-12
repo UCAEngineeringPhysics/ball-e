@@ -371,9 +371,9 @@ def handle_fixed_ball(ud) -> None:
     """Replaces FIXED_BUCKET_TRAVEL_FRAMES with spatial coordinates."""
 
     # 1. Target in m
-    TARGET_X = 4.75
-    TARGET_Y = 4.75
-    GOAL_THRESHOLD = 0.20  # Feet (approx 20cm). Stops once close enough to see the bucket.
+    TARGET_X = 2.3
+    TARGET_Y = 2.3
+    GOAL_THRESHOLD = 0.20
     
     # 2. Pull Gains from tune file (or hard-code)
     # Using 0.4 for linear and 1.2 for angular is a safe starting point
@@ -407,6 +407,10 @@ def handle_fixed_ball(ud) -> None:
     ang_cmd = _clamp(heading_error * ANG_KP, -MAX_ANG, MAX_ANG)
 
     ud.latest_msg = build_msg(lin_cmd, ang_cmd, 0, 0, 0)
+    print(
+    f"MODE fixed_ball | pos=({ud.odom_x:.2f},{ud.odom_y:.2f}) "
+    f"dist={dist_remaining:.2f}"
+)
 
 
 def handle_fixed_bucket(ud) -> None:
@@ -416,7 +420,7 @@ def handle_fixed_bucket(ud) -> None:
     """
     # 1. Target in FEET
     TARGET_X = 0.0
-    TARGET_Y = 4.75
+    TARGET_Y = 2.3
     GOAL_THRESHOLD = 0.20  # Feet (approx 20cm). Stops once close enough to see the bucket.
     
     # 2. Pull Gains from tune file (or hard-code)
