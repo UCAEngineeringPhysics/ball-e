@@ -69,8 +69,8 @@ class DeadReckonNavigator:
         self,
         kp_v=0.5,
         kp_w=1.0,
-        max_v=0.4,
-        max_w=1.0,
+        max_v=0.3,
+        max_w=0.7,
         distance_tolerance=0.05,
     ):
         """
@@ -107,6 +107,11 @@ class DeadReckonNavigator:
 if __name__ == "__main__":
     navigator = DeadReckonNavigator()
     navigator.set_goal(1, 2)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
+        sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+    navigator.set_goal(0, 0)
     while not navigator.is_goal_reached:
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
