@@ -30,3 +30,9 @@ mv ~/Downloads/project1.v15.yolov8 ~/balbuc_datasets/bb_data-0312
    ```
  > [!TIP]
  > You can set `model=yolov8m.pt`
+
+4. Export to ONNX
+   ```sh
+   yolo export model=/workspace/ultralytics/runs/detect/balbuc0312_yolov8s/weights/best.pt imgsz=640 format=onnx opset=11  # export at 640x640
+   ```
+   
