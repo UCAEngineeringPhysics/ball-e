@@ -1,7 +1,7 @@
 import threading
 from time import time, sleep
 from serial import Serial
-from math import pi, sin, cos, atan2, hypot
+from math import sin, cos, atan2, hypot
 
 
 class DeadReckonNavigator:
@@ -29,7 +29,10 @@ class DeadReckonNavigator:
             dt = curr_ts - last_ts
             # if (curr_ts - last_ts) >= 0.04:  # TX freq: 25 Hz
             if dt >= 0.04:  # TX freq: 25 Hz
-                self.compute_target_velocity()
+                if not self.is_goal_reached:
+                    self.compute_target_velocity()
+                else:
+                    pass  # TODO: hard coded vels
                 msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f}\n"
                 # Encode string to bytes and send
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
@@ -102,6 +105,8 @@ class DeadReckonNavigator:
 
 if __name__ == "__main__":
     navigator = DeadReckonNavigator()
-    while True:
-        print(f"[{time()}]Received motion data:\n---\n{navigator.motion_data}")
+    navigator.set_goal(1, 2)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
