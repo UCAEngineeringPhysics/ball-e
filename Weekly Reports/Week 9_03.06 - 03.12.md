@@ -6,7 +6,14 @@
 - Test odometry again after review from Dr. Zhang and troubleshoot as necessary.
 
 # MISIA
+## DONE
+- Fixed the design of the base
+- Printed two parts of the new base
 
+## TO DO
+- Print the other two parts of the base
+- Print new battery holder
+- Finish the camera holder design
 
 # CALEB
 ## DONE
