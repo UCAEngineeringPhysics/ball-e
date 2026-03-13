@@ -1,6 +1,6 @@
 # Retrain YOLOv8 Model using Custom Dataset (balbuc)
 > [!TIP]
-> Other models' retraining instructions: [](https://github.com/hailo-ai/hailo_model_zoo/blob/master/docs/RETRAIN_ON_CUSTOM_DATASET.rst)
+> Other models' [retraining instructions](https://github.com/hailo-ai/hailo_model_zoo/blob/master/docs/RETRAIN_ON_CUSTOM_DATASET.rst)
 
 
 ## 1. Download Roboflow Dataset
