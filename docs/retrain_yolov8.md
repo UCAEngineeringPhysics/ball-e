@@ -18,6 +18,9 @@ mv ~/Downloads/project1.v15.yolov8 ~/balbuc_datasets/bb_data-0312
    ```sh
    docker run --name "yolov8_retrain_docker" -it --gpus all --ipc=host -v  /home/ball-e/balbuc_datasets:/workspace/balbuc_datasets yolov8:v0
    ```
+  > [!NOTE]
+  > If docker name has been taken, use `docker ps -a` to list all containers then look for the "Container ID" of the docker.
+  > Use `docker rm <container_id>` command to remove the docker.
 3. Start training
    ```sh
    yolo detect train data=/workspace/balbuc_datasets/bb_data-0312/data.yaml model=yolov8s.pt name=balbuc0312_yolov8s epochs=100 batch=16
