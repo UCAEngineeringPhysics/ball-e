@@ -4,7 +4,7 @@ from serial import Serial
 from math import sin, cos, atan2, hypot
 
 
-class DeadReckonNavigator:
+class BlindNavigator:
     def __init__(self) -> None:
         self.pico_msngr = Serial(port="/dev/ttyACM0", baudrate=115200, timeout=0.01)
         print(f"Messenger initiated at: {self.pico_msngr.name}\n")
@@ -105,7 +105,7 @@ class DeadReckonNavigator:
 
 
 if __name__ == "__main__":
-    navigator = DeadReckonNavigator()
+    navigator = BlindNavigator()
     navigator.set_goal(1, 2)
     while not navigator.is_goal_reached:
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
