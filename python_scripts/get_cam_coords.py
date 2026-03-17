@@ -99,7 +99,7 @@ class HailoRemoteInference:
 # ---------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--hef-path", default="../models/yolov8s_h8l.hef")
+    parser.add_argument("--hef-path", default="../models/12_8_25.hef")
     parser.add_argument("--labels-json", default="../models/ball_bucket.json")
     # Added dummy --input argument so your existing command string works
     parser.add_argument("--input", default=None, help="Ignored: RealSense is hardcoded")
@@ -168,8 +168,8 @@ def main():
                     #print(f"3D World Coordinates (X, Y, Z): {point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f} meters")
                     
                     # Draw
-                    cv2.rectangle(img_display, (0, 255, 0), 2)
-                    cv2.putText(img_display, f"{label}",  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    cv2.rectangle(img_display, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    #cv2.putText(img_display, f"{label}",  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
     finally:
         engine.stop()
