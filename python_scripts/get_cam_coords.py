@@ -1,6 +1,8 @@
 #uses multiple pipelines for detection and depth. 
 
 
+from cProfile import label
+
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -123,6 +125,7 @@ def main():
 
         while True:
             frames = pipeline.wait_for_frames()
+            aligned_frames = align.process(frames)
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
 
@@ -141,24 +144,32 @@ def main():
             # 3. Process
             for label, conf, bbox in detections:
                 if conf < 0.5: continue
+ # Map bbox (0.0-1.0) to 640x480
+                x1 = int(bbox.xmin() * 640)
+                y1 = int(bbox.ymin() * 480)
+                x2 = int(bbox.xmax() * 640)
+                y2 = int(bbox.ymax() * 480)
+                
+                cx = (x1 + x2) // 2
+                cy = (y1 + y2) // 2
 
-            # Define pixel coordinates (x, y)
-            x, y = 320, 240  # Example: center of image
+                depth_in_meters = depth_frame.get_distance(cx, cy)
 
-            # Get depth (Z) in meters
-            depth_in_meters = depth_frame.get_distance(x, y)
+                if depth_in_meters > 0:
+                # Get depth (Z) in meters
 
-            # Get intrinsics of depth stream
-            intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
+                    # Get intrinsics of depth stream
+                    intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
 
-            # Convert 2D pixel to 3D point (X, Y, Z in meters)
-            point = rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], depth_in_meters)
-
-            print(f"3D World Coordinates (X, Y, Z): {point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f} meters")
-            
-            # Draw
-            cv2.rectangle(img_display, (0, 255, 0), 2)
-            cv2.putText(img_display, f"{label}",  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    # Convert 2D pixel to 3D point (X, Y, Z in meters)
+                    point = rs.rs2_deproject_pixel_to_point(intrinsics, [cx, cy], depth_in_meters)
+                    
+                    print(f"Object: {label} at X:{point[0]:.2f}m, Y:{point[1]:.2f}m, Z:{point[2]:.2f}m")
+                    #print(f"3D World Coordinates (X, Y, Z): {point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f} meters")
+                    
+                    # Draw
+                    cv2.rectangle(img_display, (0, 255, 0), 2)
+                    cv2.putText(img_display, f"{label}",  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
     finally:
         engine.stop()
