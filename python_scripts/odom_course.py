@@ -212,7 +212,7 @@ def main():
         arm_state="idle",
         picker_counter = 0,
         lap_counter = 0,
-        targeting_active = False #Initialize as False
+        targeting_active = False, #Initialize as False
         latest_msg="0.0,0.0,0,0,10\n"
     )
 
