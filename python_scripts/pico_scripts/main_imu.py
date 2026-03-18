@@ -59,9 +59,9 @@ while True:
             targ_lin_vel = float(targ_vels[0])
             targ_ang_vel = float(targ_vels[1])
             
-            sho_vel = int(buffer[2])
-            cla_vel = int(buffer[3])
-            arm_state = int(buffer[4])
+            sho_vel = int(float(targ_vels[2]))
+            cla_vel = int(float(targ_vels[3]))
+            arm_state = int(float(targ_vels[4]))
             
             mobile_base.set_vels(targ_lin_vel, targ_ang_vel)
             
@@ -70,5 +70,3 @@ while True:
             else:
                 arm.lower_claw(sho_vel)
                 arm.close_claw(cla_vel)  
-
-
