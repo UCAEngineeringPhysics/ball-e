@@ -210,7 +210,9 @@ def main():
     state = SimpleNamespace(
         mode="fixed_ball",
         arm_state="idle",
-        counter=0,
+        picker_counter = 0,
+        lap_counter = 0,
+        targeting_active = False #Initialize as False
         latest_msg="0.0,0.0,0,0,10\n"
     )
 
@@ -247,7 +249,6 @@ def main():
             if state.mode == "pause":
                 state.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
 
-
             elif state.mode == "pick":
                         # Always reset arm state when entering pick
                     if state.arm_state == "idle":
@@ -275,7 +276,8 @@ def main():
                         state.picker_counter += 1
                         if state.picker_counter >= 180:
                             navigator.manual_override_msg = "0.0, 0.0, 0, 0, 0\n"
-                            state.mode = "pause"
+                            state.mode = "fixed_bucket" #"pause" for testing
+                            state.targeting_active = False  # Reset
                             state.picker_counter = 0
                     # idle = normal driving
                     elif state.arm_state == "idle":
@@ -286,8 +288,10 @@ def main():
             elif state.mode == "fixed_ball":
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
+                
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
-                if navigator.is_goal_reached and not state.targeting_active:
+                if not state.targeting_active:
+                    print("Setting initial search waypoint...")
                     navigator.set_goal(2.0, 0.0) # Coordinates for first way point
                     state.targeting_active = True 
                     
@@ -296,6 +300,7 @@ def main():
                 
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
+                    print("Arrived at ball location. Switching to Pick.")
                     state.mode = "pick"
                     state.arm_state = "lower"
                     state.targeting_active = False
