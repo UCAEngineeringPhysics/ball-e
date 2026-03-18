@@ -56,6 +56,56 @@ def transform_cam_to_odom(coords_cam, robot_pose):
     return coords_odom
 
 
+#Function for odometry navigation (logic from greenball_follower)
+def process_targeting(navigator, depth_frame, detections, target_label):
+    """
+    Looks for a specific label in detections and updates navigator goal.
+    Returns: True if target found/updated, False otherwise.
+    """
+
+    for label, conf, bbox in detections:
+        if conf > 0.5 and label == target_label:
+            x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
+            y1 = int(bbox.ymin() * 480)
+            x2 = int(bbox.xmax() * 640)
+            y2 = int(bbox.ymax() * 480)
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            # Compute goal coords
+            depth_in_meters = depth_frame.get_distance(cx, cy)
+            # print(f"depth: {depth_in_meters}m")  # debug
+            if depth_in_meters > 0:
+                intrinsics = (
+                    depth_frame.profile.as_video_stream_profile().intrinsics
+                )
+                coords_cam = rs.rs2_deproject_pixel_to_point(
+                    intrinsics,
+                    [cx, cy],
+                    depth_in_meters,
+                )  # Convert 2D pixel to 3D point (X, Y, Z in meters)
+                # print(
+                #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
+                # )  # debug
+                goal_coords = transform_cam_to_odom(
+                    (coords_cam[0], coords_cam[1], coords_cam[2]),
+                    (navigator.x, navigator.y, navigator.theta),
+                )
+                print(f"Goal coors in odom: {goal_coords}")
+                if (
+                    np.linalg.norm(
+                        np.array(goal_coords[:2])
+                        - np.array((navigator.goal_x, navigator.goal_y))
+                    )
+                    > 0.02
+                ):  # update goal when necessary
+                    navigator.set_goal(goal_coords[0], goal_coords[1])
+                    print(f"Set goal at: {goal_coords}")
+                print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
+                found = True
+                break
+    return found
+
+
 # ---------------------------------------------------------
 # 1. HAILO INFERENCE CLASS (The "Engine")
 # ---------------------------------------------------------
@@ -138,13 +188,12 @@ class HailoRemoteInference:
         except queue.Empty:
             return []
 
-
 # ---------------------------------------------------------
 # 2. MAIN ROBOT LOGIC
 # ---------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--hef-path", default="../models/12_8_25.hef")
+    parser.add_argument("--hef-path", default="../models/3-12-caleb.hef")
     parser.add_argument("--labels-json", default="../models/ball_bucket.json")
     # Added dummy --input argument so your existing command string works
     parser.add_argument("--input", default=None, help="Ignored: RealSense is hardcoded")
@@ -159,7 +208,7 @@ def main():
 
     # Create a state object to hold modes and counters
     state = SimpleNamespace(
-        mode="detect_and_target",
+        mode="fixed_ball",
         arm_state="idle",
         counter=0,
         latest_msg="0.0,0.0,0,0,10\n"
@@ -192,62 +241,12 @@ def main():
             # 2. Infer
             engine.infer_frame(img_color)
             detections = engine.get_latest_result()
-         #-------------------------------------------------------------------------   
-            # MODES
+            
+    # ------------------------------------MODES-------------------------------------------
             
             if state.mode == "pause":
                 state.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-            
-            elif state.mode == "detect_and_target":
-                #Regular odometry driving (set string to empty)
-                navigator.manual_override_msg = "" 
 
-                # Odometry navigation
-                for label, conf, bbox in detections:
-                    if conf < 0.5:
-                        continue
-                    x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
-                    y1 = int(bbox.ymin() * 480)
-                    x2 = int(bbox.xmax() * 640)
-                    y2 = int(bbox.ymax() * 480)
-                    cx = (x1 + x2) // 2
-                    cy = (y1 + y2) // 2
-                    # Compute goal coords
-                    depth_in_meters = depth_frame.get_distance(cx, cy)
-                    # print(f"depth: {depth_in_meters}m")  # debug
-                    if depth_in_meters > 0:
-                        intrinsics = (
-                            depth_frame.profile.as_video_stream_profile().intrinsics
-                        )
-                        coords_cam = rs.rs2_deproject_pixel_to_point(
-                            intrinsics,
-                            [cx, cy],
-                            depth_in_meters,
-                        )  # Convert 2D pixel to 3D point (X, Y, Z in meters)
-                        # print(
-                        #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
-                        # )  # debug
-                        goal_coords = transform_cam_to_odom(
-                            (coords_cam[0], coords_cam[1], coords_cam[2]),
-                            (navigator.x, navigator.y, navigator.theta),
-                        )
-                        print(f"Goal coors in odom: {goal_coords}")
-                        if (
-                            np.linalg.norm(
-                                np.array(goal_coords[:2])
-                                - np.array((navigator.goal_x, navigator.goal_y))
-                            )
-                            > 0.02
-                        ):  # update goal when necessary
-                            navigator.set_goal(goal_coords[0], goal_coords[1])
-                            print(f"Set goal at: {goal_coords}")
-                        print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
-
-                    
-                # If we are close enough to the goal, switch mode
-                if navigator.is_goal_reached:
-                    state.mode = "pick"
-                    state.arm_state = "lower"
 
             elif state.mode == "pick":
                         # Always reset arm state when entering pick
@@ -276,15 +275,37 @@ def main():
                         state.picker_counter += 1
                         if state.picker_counter >= 180:
                             navigator.manual_override_msg = "0.0, 0.0, 0, 0, 0\n"
-                            state.mode = "fixed_back"
+                            state.mode = "pause"
                             state.picker_counter = 0
                     # idle = normal driving
                     elif state.arm_state == "idle":
-                        pass         
+                        pass   
+
+
+
+            elif state.mode == "fixed_ball":
+                #Regular odometry driving (set string to empty)
+                navigator.manual_override_msg = "" 
+                # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
+                if navigator.is_goal_reached and not state.targeting_active:
+                    navigator.set_goal(2.0, 0.0) # Coordinates for first way point
+                    state.targeting_active = True 
+                    
+                # 2. Use obj detection (for *ball* specifically) to improve/update way point
+                process_targeting(navigator, depth_frame, detections, "ball")
+                
+                # 3. Robot has arrived at ball, switch modes
+                if navigator.is_goal_reached:
+                    state.mode = "pick"
+                    state.arm_state = "lower"
+                    state.targeting_active = False
+
+
+
           #------------------------------------------------------------------------------  
     
                     # Draw
-                    cv2.rectangle(img_display, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    #cv2.rectangle(img_display, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     # cv2.putText(
                     #     img_display,
                     #     f"{label}",
