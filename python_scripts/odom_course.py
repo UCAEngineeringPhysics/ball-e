@@ -62,7 +62,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
     Looks for a specific label in detections and updates navigator goal.
     Returns: True if target found/updated, False otherwise.
     """
-
+    found = False
     for label, conf, bbox in detections:
         if conf > 0.5 and label == target_label:
             x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
