@@ -9,6 +9,7 @@ class BlindNavigator:
         self.pico_msngr = Serial(port="/dev/ttyACM0", baudrate=115200, timeout=0.01)
         print(f"Messenger initiated at: {self.pico_msngr.name}\n")
         # Variables
+        self.is_goal_reached = True
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
