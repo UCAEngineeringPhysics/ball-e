@@ -205,7 +205,7 @@ def main():
     navigator = BlindNavigator()
 
     # Initialize Serial communication
-    pico_serial = serial.Serial(port='/dev/ttyACM0', baudrate=115200)
+    pico_serial = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=0.01)
     print(f"Messegner initiated at: {pico_serial.name}\n")
 
 
