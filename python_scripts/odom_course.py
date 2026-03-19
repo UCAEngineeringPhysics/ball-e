@@ -14,6 +14,8 @@ import hailo
 
 import gi
 
+import serial
+
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
@@ -202,6 +204,11 @@ def main():
     # A. Setup navigotro
     navigator = BlindNavigator()
 
+    # Initialize Serial communication
+    pico_serial = serial.Serial(port='/dev/ttyACM0', baudrate=115200)
+    print(f"Messegner initiated at: {pico_serial.name}\n")
+
+
     # B. Setup Hailo
     engine = HailoRemoteInference(args.hef_path, args.labels_json)
     engine.start()
@@ -213,7 +220,6 @@ def main():
         picker_counter = 0,
         lap_counter = 0,
         targeting_active = False, #Initialize as False
-        latest_msg="0.0,0.0,0,0,10\n"
     )
 
     # C. Setup RealSense
@@ -227,6 +233,10 @@ def main():
     pipeline.start(config)
 
     print("System Running. Press 'q' to quit.")
+
+    #Set arm to neutral
+    pico_serial.write("0.0,0.0,0,0,10\n".encode('utf-8'))
+
     navigator.set_goal(2.0, 0.0)
 
     try:
@@ -243,11 +253,37 @@ def main():
             # 2. Infer
             engine.infer_frame(img_color)
             detections = engine.get_latest_result()
-            
+
+
+
+            # Display obj detection in real time
+            for label, conf, bbox in detections:
+                # Convert normalized coordinates (0.0-1.0) to pixel coordinates
+                x1 = int(bbox.xmin() * 640)
+                y1 = int(bbox.ymin() * 480)
+                x2 = int(bbox.xmax() * 640)
+                y2 = int(bbox.ymax() * 480)
+
+                # Draw the box (Green for ball, Blue for bucket, etc.)
+                color = (0, 255, 0) if label == "ball" else (255, 0, 0)
+                cv2.rectangle(img_display, (x1, y1), (x2, y2), color, 2)
+
+                # Add Label and Confidence
+                text = f"{label}: {conf:.2f}"
+                cv2.putText(img_display, text, (x1, y1 - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+            # Show the frame
+            cv2.imshow("Robot View", img_display)
+
+            # REQUIRED: This allows the window to refresh and catches the 'q' key to quit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+                        
     # ------------------------------------MODES-------------------------------------------
             
             if state.mode == "pause":
-                state.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+                navigator.manual_override_msg= "0.0, 0.0, 0, 0, 0\n"
 
             elif state.mode == "pick":
                         # Always reset arm state when entering pick
@@ -283,8 +319,6 @@ def main():
                     elif state.arm_state == "idle":
                         pass   
 
-
-
             elif state.mode == "fixed_ball":
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
@@ -304,21 +338,25 @@ def main():
                     state.mode = "pick"
                     state.arm_state = "lower"
                     state.targeting_active = False
+                    
 
 
+            # Determine which message to send
+            if navigator.manual_override_msg != "":
+                final_msg = navigator.manual_override_msg
+            else:
+                # Get the driving velocities from the navigator (odometry)
+                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,0\n"
+
+            # ACTUALLY SEND TO PICO
+            pico_serial.write(final_msg.encode('utf-8'))
+
+            # Optional: Read back from Pico to clear the buffer
+            if pico_serial.in_waiting > 0:
+                pico_serial.readline()
 
           #------------------------------------------------------------------------------  
     
-                    # Draw
-                    #cv2.rectangle(img_display, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    # cv2.putText(
-                    #     img_display,
-                    #     f"{label}",
-                    #     cv2.FONT_HERSHEY_SIMPLEX,
-                    #     0.6,
-                    #     (0, 255, 0),
-                    #     2,
-                    # )
 
     finally:
         engine.stop()
