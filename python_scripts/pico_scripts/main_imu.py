@@ -16,14 +16,10 @@ ALPHA = 0.95  # weight for gyro measured angular velocity
 freq(240_000_000)  # Pico2 original: 150_000_000
 # Instantiate robot
 imu = MPU6050(pow_id=3, scl_id=5, sda_id=4, i2c_addr=0x68)
-
 mobile_base = DiffDriveController(
     left_ids=((21, 19, 20), (6, 7)), right_ids=((16, 18, 17), (26, 27))
 )
-
 arm = ArmController(15, 13, 14)
-
-
 
 pico_messenger = select.poll()  # create a poll object
 pico_messenger.register(sys.stdin, select.POLLIN)  # peek at serial port input
@@ -40,13 +36,11 @@ while True:
     now_us = ticks_us()
     if ticks_diff(now_us, last_us) >= tx_period_us:
         meas_lin_vel, meas_ang_vel = mobile_base.get_vels()
-        
+        motion_data = imu.read_data()
+        fuse_ang_vel = ALPHA * motion_data["omg_z"] + (1 - ALPHA) * meas_ang_vel
         shoulder_duty_a = arm.shoulder_duty_a
         shoulder_duty_b = arm.shoulder_duty_b
         claw_duty = arm.claw_duty
-        
-        motion_data = imu.read_data()
-        fuse_ang_vel = ALPHA * motion_data["omg_z"] + (1 - ALPHA) * meas_ang_vel
         out_msg = f"{meas_lin_vel:.3f},{fuse_ang_vel:.3f}"
         print(out_msg)  # main.py will send this to computer
         last_us = now_us  # update last time stamp
@@ -58,15 +52,13 @@ while True:
         if len(targ_vels) == 5:
             targ_lin_vel = float(targ_vels[0])
             targ_ang_vel = float(targ_vels[1])
-            
-            sho_vel = int(float(targ_vels[2]))
-            cla_vel = int(float(targ_vels[3]))
-            arm_state = int(float(targ_vels[4]))
-            
+            sho_vel = int(targ_vels[2])
+            cla_vel = int(targ_vels[3])
+            arm_state = int(targ_vels[4])
             mobile_base.set_vels(targ_lin_vel, targ_ang_vel)
-            
             if arm_state == 10:      # idle ? go to neutral
                 arm.set_neutral()
             else:
                 arm.lower_claw(sho_vel)
-                arm.close_claw(cla_vel)  
+                arm.close_claw(cla_vel)   
+            
