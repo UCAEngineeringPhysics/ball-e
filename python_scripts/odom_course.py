@@ -14,7 +14,10 @@ import hailo
 
 import gi
 
+#******************
 import serial
+import threading
+from time import sleep
 
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
@@ -107,7 +110,33 @@ def process_targeting(navigator, depth_frame, detections, target_label):
                 break
     return found
 
+class PicoThreadedInterface:
+    def __init__(self, port='/dev/ttyACM0', baudrate=115200):
+        self.ser = serial.Serial(port=port, baudrate=baudrate, timeout=0.01)
+        self.latest_msg = "0.0,0.0,0,0,10\n"
+        self.running = True
+        self.interval = 0.02  # 50Hz (20ms)
+        
+        # Start the background thread
+        self.thread = threading.Thread(target=self._control_loop, daemon=True)
+        self.thread.start()
 
+    def _control_loop(self):
+        while self.running:
+            self.ser.write(self.latest_msg.encode('utf-8'))
+            if self.ser.in_waiting>0:
+                self.ser.readline()
+            sleep(0.02)
+
+    def update_command(self, msg):
+        if not msg.endswith('\n'):
+            msg += '\n'
+        self.latest_msg = msg
+
+    def stop(self):
+        self.running = False
+        self.ser.close()
+       
 # ---------------------------------------------------------
 # 1. HAILO INFERENCE CLASS (The "Engine")
 # ---------------------------------------------------------
@@ -205,8 +234,8 @@ def main():
     navigator = BlindNavigator()
 
     # Initialize Serial communication
-    pico_serial = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=0.01)
-    print(f"Messegner initiated at: {pico_serial.name}\n")
+    pico = PicoThreadedInterface('/dev/ttyACM0')
+    print(f"Messegner initiated\n")
 
 
     # B. Setup Hailo
@@ -233,9 +262,6 @@ def main():
     pipeline.start(config)
 
     print("System Running. Press 'q' to quit.")
-
-    #Set arm to neutral
-    pico_serial.write("0.0,0.0,0,0,10\n".encode('utf-8'))
 
     navigator.set_goal(2.0, 0.0)
 
@@ -349,18 +375,14 @@ def main():
                 final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,0\n"
 
             # ACTUALLY SEND TO PICO
-            pico_serial.write(final_msg.encode('utf-8'))
-
-            # Optional: Read back from Pico to clear the buffer
-            if pico_serial.in_waiting > 0:
-                pico_serial.readline()
-
+            pico.update_command(final_msg)
           #------------------------------------------------------------------------------  
     
 
     finally:
         engine.stop()
         pipeline.stop()
+        pico.stop()
         cv2.destroyAllWindows()
 
 
