@@ -1,304 +1,402 @@
-from pathlib import Path
-import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
-import os
+from blind_navigator import BlindNavigator
+
+#Import to save modes and counters
+from types import SimpleNamespace
+
+
 import numpy as np
 import cv2
+
+import argparse
+import pyrealsense2 as rs
+import queue
 import hailo
-from time import sleep
-import threading
+
+import gi
+
+#******************
 import serial
+import threading
+from time import sleep
 
-# Local application-specific imports
-import hailo
-from hailo_apps.hailo_app_python.core.common.buffer_utils import get_caps_from_pad, get_numpy_from_buffer
-from hailo_apps.hailo_app_python.core.gstreamer.gstreamer_app import app_callback_class
-from hailo_apps.hailo_app_python.apps.detection_simple.detection_pipeline_simple import GStreamerDetectionApp
-# endregion imports
-
-#*********************************IMPROVEMENTS************************************************
-#Increase speed during encoder portions
-#Make turning threshold smaller to try to improve centering (decrease 0.3 and 0.7)
+gi.require_version("Gst", "1.0")
+from gi.repository import Gst, GLib
 
 
-# User-defined class to be used in the callback function: Inheritance from the app_callback_class
-class user_app_callback_class(app_callback_class):
-    def __init__(self):
-        super().__init__()
+def transform_cam_to_odom(coords_cam, robot_pose):
+    """
+    Transforms a 3D point from the camera frame to the odom frame.
+
+    Args:
+        coords_cam (list or tuple): (x_c, y_c, z_c) representing the object in the camera frame.
+        robot_pose (list or tuple): (X, Y, theta) representing the robot's current odometry.
+    Returns:
+        coords_odom (numpy.ndarray): [x_o, y_o, z_o] representing the object in the odom frame.
+    """
+    # 1. Parse inputs into numpy arrays
+    coords_cam_arr = np.array(coords_cam)
+    X, Y, theta = robot_pose
+
+    # 2. Static Transformation: camera_link to base_link
+    R_c_b = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
+    t_c_b = np.array(
+        [-0.64, 0.0, 0.2],  # 0.64 is the gap between camera and ball
+    )  # Set camera displacement from robot's base center
+
+    # Calculate point in base_link
+    # p_b = R_c_b @ coords_cam_arr + t_c_b
+    coords_base_arr = R_c_b @ coords_cam_arr + t_c_b
+
+    # 3. Dynamic Transformation: base_link to odom
+    # Building the rotation matrix manually for speed (Z-axis rotation only)
+    cos_t = np.cos(theta)
+    sin_t = np.sin(theta)
+
+    R_b_o = np.array([[cos_t, -sin_t, 0.0], [sin_t, cos_t, 0.0], [0.0, 0.0, 1.0]])
+    t_b_o = np.array([X, Y, 0.0])  # Robot's position on the ground plane
+
+    # Calculate final point in odom
+    coords_odom = R_b_o @ coords_base_arr + t_b_o
+
+    return coords_odom
+
+
+#Function for odometry navigation (logic from greenball_follower)
+def process_targeting(navigator, depth_frame, detections, target_label):
+    """
+    Looks for a specific label in detections and updates navigator goal.
+    Returns: True if target found/updated, False otherwise.
+    """
+    found = False
+    for label, conf, bbox in detections:
+        if conf > 0.5 and label == target_label:
+            x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
+            y1 = int(bbox.ymin() * 480)
+            x2 = int(bbox.xmax() * 640)
+            y2 = int(bbox.ymax() * 480)
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            # Compute goal coords
+            depth_in_meters = depth_frame.get_distance(cx, cy)
+            # print(f"depth: {depth_in_meters}m")  # debug
+            if depth_in_meters > 0:
+                intrinsics = (
+                    depth_frame.profile.as_video_stream_profile().intrinsics
+                )
+                coords_cam = rs.rs2_deproject_pixel_to_point(
+                    intrinsics,
+                    [cx, cy],
+                    depth_in_meters,
+                )  # Convert 2D pixel to 3D point (X, Y, Z in meters)
+                # print(
+                #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
+                # )  # debug
+                goal_coords = transform_cam_to_odom(
+                    (coords_cam[0], coords_cam[1], coords_cam[2]),
+                    (navigator.x, navigator.y, navigator.theta),
+                )
+                print(f"Goal coors in odom: {goal_coords}")
+                if (
+                    np.linalg.norm(
+                        np.array(goal_coords[:2])
+                        - np.array((navigator.goal_x, navigator.goal_y))
+                    )
+                    > 0.02
+                ):  # update goal when necessary
+                    navigator.set_goal(goal_coords[0], goal_coords[1])
+                    print(f"Set goal at: {goal_coords}")
+                print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
+                found = True
+                break
+    return found
+
+class PicoThreadedInterface:
+    def __init__(self, port='/dev/ttyACM0', baudrate=115200):
+        self.ser = serial.Serial(port=port, baudrate=baudrate, timeout=0.01)
+        self.latest_msg = "0.0,0.0,0,0,10\n"
+        self.latest_feedback = (0.0, 0.0) # Store (meas_lin, meas_ang)
+        self.running = True
+        self.interval = 0.02  # 50Hz (20ms)
         
-        self.messenger = serial.Serial(port='/dev/ttyACM0', baudrate=115200)  # New variable example
-        print(f"Messenger initiated at: {self.messenger.name}\n")
-        # Shared variable for latest message
-        self.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-        
-        # Start Pico update thread
-        self.pico_thread = threading.Thread(target=self.send_msg, daemon=True)
-        self.pico_thread.start()
-        self.vel =0
-        
-        self.mode = "fixed_ball"
-        self.arm_state = "idle"
-        self.fixed_travel_counter = 0
-        self.picker_counter = 0
-        self.lap_counter = 0
+        # Start the background thread
+        self.thread = threading.Thread(target=self._control_loop, daemon=True)
+        self.thread.start()
 
-    def send_msg(self):
-        """Continuously send the latest message to the Pico."""
-        while True:
-            if self.messenger.inWaiting() > 0:
-                # print("pico msg received")
-                in_msg = self.messenger.readline().strip().decode("utf-8", "ignore")
-                # print(f"RPi recieved: {in_msg}")
-            self.messenger.write(self.latest_msg)
-            sleep(0.02)
-
-
-# User-defined callback function: This is the callback function that will be called when data is available from the pipeline
-def app_callback(pad, info, user_data):
-    user_data.increment()  # Using the user_data to count the number of frames
-    string_to_print = f"Frame count: {user_data.get_count()}\n"
-
-    buffer = info.get_buffer()  # Get the GstBuffer from the probe info
-    if buffer is None:  # Check if the buffer is valid
-        return Gst.PadProbeReturn.OK
-    
-    # Using the user_data to count the number of frames
-    user_data.increment()
-    string_to_print = f"Frame count: {user_data.get_count()}\n"
-        # Get resolution size
-    (
-        caps_string,
-        frame_width,
-        frame_height,
-    ) = get_caps_from_pad(pad)
-    user_data.frame_width = frame_width
-    user_data.frame_height = frame_height
-   
-    if user_data.mode == "pause":
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-                 
-    elif user_data.mode == "pick":
-            # Always reset arm state when entering pick
-        if user_data.arm_state == "idle":
-            user_data.arm_state = "lower"
-            user_data.picker_counter = 0
+    def _control_loop(self):
+        while self.running:
+            self.ser.write(self.latest_msg.encode('utf-8'))
+            try:
+                if self.ser.in_waiting > 0:
+                    self.ser.readline()
+                    sleep(0.02)
+            except Exception:
+                pass
             
-        user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-        if user_data.arm_state == "lower":
-            user_data.latest_msg = "0.0, 0.0, 3000, 0, 0\n".encode('utf-8')
-            user_data.picker_counter += 1
-            if user_data.picker_counter >= 160:
-                user_data.arm_state = "close"
-                user_data.picker_counter = 0
-                
-        elif user_data.arm_state == "close":
-            user_data.latest_msg = "0.0, 0.0, 0, 3000, 0\n".encode('utf-8')
-            user_data.picker_counter += 1
-            if user_data.picker_counter >= 150:
-                user_data.arm_state = "raise"
-                user_data.picker_counter = 0
-                
-        elif user_data.arm_state == "raise":
-            user_data.latest_msg = "0.0, 0.0, -3000, 0, 0\n".encode('utf-8')
-            user_data.picker_counter += 1
-            if user_data.picker_counter >= 180:
-                user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-                user_data.mode = "fixed_back"
-                user_data.picker_counter = 0
-        # idle = normal driving
-        elif user_data.arm_state == "idle":
-            pass         
+    def read_latest(self):
+        return self.latest_feedback
 
-    elif user_data.mode == "drop":
-        user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
-        if user_data.arm_state == "lower":
-            user_data.latest_msg = "0.0, 0.0, 3000, 0, 0\n".encode('utf-8')
-            user_data.picker_counter += 1
-            if user_data.picker_counter >= 40:
-                user_data.arm_state = "open"
-                user_data.picker_counter = 0          
-                
-        elif user_data.arm_state == "open":
-            user_data.latest_msg = "0.0, 0.0, 0, -3000, 0\n".encode('utf-8')
-            user_data.picker_counter += 1
-            user_data.lap_counter += 1
-            if user_data.picker_counter >= 40:
-                if user_data.lap_counter == 4:
-                    user_data.mode = "swivel_large_right"
-                else:     
-                    #Return both arm and claw to neutral
-                    user_data.latest_msg = "0.0, 0.0, 0, 0,10\n".encode('utf-8')
-                    user_data.mode = "detect"
-                    user_data.picker_counter = 0                          
-                    user_data.fixed_travel_counter = 0
-            
-    elif user_data.mode == "fixed_ball":
-        user_data.latest_msg = "-0.30, 0.0, 0, 0, 10\n".encode('utf-8')
-        user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 260: #460
-            user_data.mode = "detect"
-            user_data.fixed_travel_counter = 0
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+    def update_command(self, msg):
+        if not msg.endswith('\n'):
+            msg += '\n'
+        self.latest_msg = msg
 
-    elif user_data.mode == "fixed_bucket":
-        user_data.latest_msg = "-0.30, 0.0, 0, 0, 0\n".encode('utf-8')
-        user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 300: #
-            user_data.mode = "detect_bucket"
-            user_data.fixed_travel_counter = 0
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+    def stop(self):
+        self.running = False
+        self.ser.close()
+       
+# ---------------------------------------------------------
+# 1. HAILO INFERENCE CLASS (The "Engine")
+# ---------------------------------------------------------
+class HailoRemoteInference:
+    def __init__(self, hef_path, labels_json):
+        Gst.init(None)
+        self.running = False
+        self.detection_queue = queue.Queue(maxsize=1)
 
+        # Determine Post-Process Shared Object
+        post_process_so = "/usr/lib/aarch64-linux-gnu/hailo/tappas/post_processes/libyolo_hailortpp_post.so"
 
-    elif user_data.mode == "swivel_small_left":
-        user_data.latest_msg = "0.0, -0.4, 0, 0, 0\n".encode('utf-8')
-        user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 95:
-            user_data.mode = "fixed_bucket"
-            user_data.fixed_travel_counter = 0
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+        # --- FIXED PIPELINE ---
+        # Added 'force-writable=true' to hailonet to fix the buffer error.
+        pipeline_str = f"""
+            appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ! \
+            videoconvert ! video/x-raw,format=RGB,width=640,height=640 ! \
+            hailonet hef-path={hef_path} force-writable=true ! \
+            hailofilter so-path={post_process_so} config-path={labels_json} qos=false ! \
+            queue leaky=no max-size-buffers=3 ! \
+            appsink name=sink emit-signals=true max-buffers=1 drop=true
+        """
 
-            
-    elif user_data.mode == "swivel_large_right":
-        user_data.latest_msg = "0.0, 0.4, 0, 0, 0\n".encode('utf-8')
-        user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 540:
-            user_data.mode = "fixed_ball"
-            user_data.fixed_travel_counter = 0
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+        try:
+            self.pipeline = Gst.parse_launch(pipeline_str)
+        except Exception as e:
+            print(f"Error building pipeline: {e}")
+            raise
 
-    elif user_data.mode == "fixed_back":
-        user_data.latest_msg = "0.1, 0.0, 0, 0, 0\n".encode('utf-8')
-        user_data.fixed_travel_counter += 1
-        if user_data.fixed_travel_counter >= 80:
-            user_data.mode = "swivel_small_left"
-            user_data.fixed_travel_counter = 0
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode('utf-8')
+        self.appsrc = self.pipeline.get_by_name("source")
+        self.appsink = self.pipeline.get_by_name("sink")
+        self.appsink.connect("new-sample", self._on_new_sample)
 
-    elif user_data.mode == "detect":
+        caps = Gst.Caps.from_string(
+            "video/x-raw,format=RGB,width=640,height=640,framerate=30/1"
+        )
+        self.appsrc.set_property("caps", caps)
 
+    def start(self):
+        self.pipeline.set_state(Gst.State.PLAYING)
+        self.running = True
+        print("Hailo Engine Started.")
+
+    def stop(self):
+        self.running = False
+        self.pipeline.set_state(Gst.State.NULL)
+
+    def _on_new_sample(self, sink):
+        sample = sink.emit("pull-sample")
+        buffer = sample.get_buffer()
         roi = hailo.get_roi_from_buffer(buffer)
         detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
 
-        if len(detections):            
-            for detection in detections:
-            #for detection in hailo.get_roi_from_buffer(buffer).get_objects_typed(hailo.HAILO_DETECTION):  # Get the detections from the buffer & Parse the detections
+        results = []
+        for det in detections:
+            label = det.get_label()
+            confidence = det.get_confidence()
+            bbox = det.get_bbox()
+            results.append((label, confidence, bbox))
 
-                label = detection.get_label()
-                bbox = detection.get_bbox()
-                confidence = detection.get_confidence()
+        if self.detection_queue.full():
+            try:
+                self.detection_queue.get_nowait()
+            except:
+                pass
+        self.detection_queue.put(results)
+        return Gst.FlowReturn.OK
 
-            if "ball" in label:
-                # Get bounding box height in pixels
-                h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
-                # focal length in pixels
-                f_pixels = 3386.0
-                # Height of bucket
-                H_real = 0.1524  # meters
-                # Distance from camera to bucket
-                # Z = (f_pixels * H_real) / h_pixels
-                user_data.distance = (f_pixels * H_real) / h_pixels
+    def infer_frame(self, numpy_frame):
+        # Resize to 640x640 for YOLO
+        resized = cv2.resize(numpy_frame, (640, 640))
+        data = resized.tobytes()
+        buf = Gst.Buffer.new_allocate(None, len(data), None)
+        buf.fill(0, data)
+        self.appsrc.emit("push-buffer", buf)
 
-                # Get track ID
-                user_data.vel = -0.4
-                track_id = 0
-                track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
-                if len(track) == 1:
-                    track_id = track[0].get_id()
-                string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
-                string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
+    def get_latest_result(self):
+        try:
+            return self.detection_queue.get_nowait()
+        except queue.Empty:
+            return []
 
-                # if Z > 5.0:
-                if user_data.distance >= 9.0:            #9.0
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "-0.2, 0.5,0, 0, 0\n".encode('utf-8')
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
-                        user_data.latest_msg = "-0.2, -0.5,0, 0, 0\n".encode('utf-8')
-                    else:
-                        user_data.latest_msg = "-0.35, 0.0,0, 0, 0\n".encode('utf-8')
+# ---------------------------------------------------------
+# 2. MAIN ROBOT LOGIC
+# ---------------------------------------------------------
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hef-path", default="../models/3-12-caleb.hef")
+    parser.add_argument("--labels-json", default="../models/ball_bucket.json")
+    # Added dummy --input argument so your existing command string works
+    parser.add_argument("--input", default=None, help="Ignored: RealSense is hardcoded")
+    args = parser.parse_args()
 
-                # elif Z <= 4.6 and Z > 9.0:
-                elif 5.9 < user_data.distance <= 9.0:
-                    if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                        user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode("utf-8")
-                    elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
-                        user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode("utf-8")
-                    else:
-                        user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode("utf-8")
+    # A. Setup navigotro
+    navigator = BlindNavigator()
 
-                else:
-                    # Stop wheels and start arm sequence only once
-                    user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
-                    user_data.arm_state = "lower"
-                    user_data.mode = "pick"
-
-        # If no ball detected, gradually reduce velocity
-        else:
-            user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
-
-    elif user_data.mode == "detect_bucket":
-            #Travel based on obj detection
-            # Get the detections from the buffer
-            roi = hailo.get_roi_from_buffer(buffer)
-            detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
-
-            if len(detections):            
-                for detection in detections:
-                    label = detection.get_label()
-                    bbox = detection.get_bbox()
-                    confidence = detection.get_confidence()
-           
-                if "bucket" in label:
-                    # Get bounding box height in pixels
-                    h_pixels = (bbox.ymax() - bbox.ymin()) * user_data.frame_height
-                    # focal length in pixels
-                    f_pixels = 3386.0
-                    # Height of bucket
-                    H_real = 0.381  # meters
-                    # Distance from camera to bucket
-                    # Z = (f_pixels * H_real) / h_pixels
-                    user_data.distance = (f_pixels * H_real) / h_pixels
-
-                    # Get track ID
-                    user_data.vel = -0.4
-                    track_id = 0
-                    track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
-                    if len(track) == 1:
-                        track_id = track[0].get_id()
-                    string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
-                    string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
-                    # if Z > 2.4:
-                    if user_data.distance >= 7.0:
-                        if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                            user_data.latest_msg = "-0.2, 0.5, 0, 0, 0\n".encode('utf-8')
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
-                            user_data.latest_msg = "-0.2, -0.5, 0, 0, 0\n".encode('utf-8')
-                        else:
-                            user_data.latest_msg = "-0.2, 0.0, 0, 0, 0\n".encode('utf-8')
-                    # elif Z <= 2.4 and Z > 1.0:
-                    elif 5.5 < user_data.distance <= 7.0:
-                        if (bbox.xmin() + bbox.xmax()) / 2 < 0.4:
-                            user_data.latest_msg = "-0.1, 0.5, 0, 0, 0\n".encode("utf-8")
-                        elif (bbox.xmin() + bbox.xmax()) / 2 > 0.6:
-                            user_data.latest_msg = "-0.1, -0.5, 0, 0, 0\n".encode("utf-8")
-                        else:
-                            user_data.latest_msg = "-0.1, 0.0, 0, 0, 0\n".encode("utf-8")
-                    else:
-                        # Stop wheels and start arm sequence only once
-                        user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()
-                        user_data.arm_state = "lower"
-                        user_data.mode = "drop"
-            else:  # no detection
-                user_data.latest_msg = "0.0, 0.0, 0, 0, 0\n".encode()          
+    # Initialize Serial communication
+    pico = PicoThreadedInterface('/dev/ttyACM0')
+    print(f"Messegner initiated\n")
 
 
+    # B. Setup Hailo
+    engine = HailoRemoteInference(args.hef_path, args.labels_json)
+    engine.start()
 
-    string_to_print += (f"Target velocity: {user_data.latest_msg}")
-    print(string_to_print)
-    return Gst.PadProbeReturn.OK
+    # Create a state object to hold modes and counters
+    state = SimpleNamespace(
+        mode="fixed_ball",
+        arm_state="idle",
+        picker_counter = 0,
+        lap_counter = 0,
+        targeting_active = False, #Initialize as False
+    )
+
+    # C. Setup RealSense
+    print("Starting RealSense...")
+    pipeline = rs.pipeline()
+    config = rs.config()
+    # Using 640x480 standard resolution
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.rgb8, 30)
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    align = rs.align(rs.stream.color)
+    pipeline.start(config)
+
+    print("System Running. Press 'q' to quit.")
+
+    navigator.set_goal(2.0, 0.0)
+
+    try:
+        while True:
+            # 1. Get frames
+            frames = pipeline.wait_for_frames()
+            aligned_frames = align.process(frames)
+            depth_frame = frames.get_depth_frame()
+            color_frame = frames.get_color_frame()
+            if not depth_frame or not color_frame:
+                continue
+            img_color = np.asanyarray(color_frame.get_data())
+            img_display = cv2.cvtColor(img_color, cv2.COLOR_RGB2BGR)
+            # 2. Infer
+            engine.infer_frame(img_color)
+            detections = engine.get_latest_result()
+
+            #******************************************************************
+            # 1. Read from Pico to update the robot's "internal map"
+            pico_data = pico.read_latest() # You need to add this method to the class (see below)
+            if pico_data:
+                # Assuming pico_data returns (meas_lin, meas_ang)
+                navigator.update(pico_data[0], pico_data[1])
+
+            # Display obj detection in real time
+            for label, conf, bbox in detections:
+                # Convert normalized coordinates (0.0-1.0) to pixel coordinates
+                x1 = int(bbox.xmin() * 640)
+                y1 = int(bbox.ymin() * 480)
+                x2 = int(bbox.xmax() * 640)
+                y2 = int(bbox.ymax() * 480)
+
+                # Draw the box (Green for ball, Blue for bucket, etc.)
+                color = (0, 255, 0) if label == "ball" else (255, 0, 0)
+                cv2.rectangle(img_display, (x1, y1), (x2, y2), color, 2)
+
+                # Add Label and Confidence
+                text = f"{label}: {conf:.2f}"
+                cv2.putText(img_display, text, (x1, y1 - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+            # Show the frame
+            cv2.imshow("Robot View", img_display)
+
+            # REQUIRED: This allows the window to refresh and catches the 'q' key to quit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+                        
+    # ------------------------------------MODES-------------------------------------------
+            
+            if state.mode == "pause":
+                navigator.manual_override_msg= "0.0,0.0,0,0,0\n"
+
+            elif state.mode == "pick":
+                        # Always reset arm state when entering pick
+                    if state.arm_state == "idle":
+                        state.arm_state = "lower"
+                        state.picker_counter = 0
+                        
+                    navigator.manual_override_msg = "0.0,0.0,0,0,0\n"
+                    if state.arm_state == "lower":
+                    # Pass the arm string to the navigator override
+                        navigator.manual_override_msg= "0.0,0.0,3000,0,0\n"
+                        state.picker_counter += 1
+                        if state.picker_counter >= 210:
+                            state.arm_state = "close"
+                            state.picker_counter = 0
+                            
+                    elif state.arm_state == "close":
+                        navigator.manual_override_msg = "0.0,0.0,0,3000,0\n"
+                        state.picker_counter += 1
+                        if state.picker_counter >= 70:
+                            state.arm_state = "raise"
+                            state.picker_counter = 0
+                            
+                    elif state.arm_state == "raise":
+                        navigator.manual_override_msg = "0.0,0.0,-3000,0,0\n"
+                        state.picker_counter += 1
+                        if state.picker_counter >= 180:
+                            navigator.manual_override_msg = "0.0,0.0,0,0,0\n"
+                            state.mode = "fixed_bucket" #"pause" for testing
+                            state.targeting_active = False  # Reset
+                            state.picker_counter = 0
+                    # idle = normal driving
+                    elif state.arm_state == "idle":
+                        pass   
+
+            elif state.mode == "fixed_ball":
+                #Regular odometry driving (set string to empty)
+                navigator.manual_override_msg = "" 
+                
+                # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
+                if not state.targeting_active:
+                    print("Setting initial search waypoint...")
+                    navigator.set_goal(2.0, 0.0) # Coordinates for first way point
+                    state.targeting_active = True 
+                    
+                # 2. Use obj detection (for *ball* specifically) to improve/update way point
+                process_targeting(navigator, depth_frame, detections, "ball")
+                
+                # 3. Robot has arrived at ball, switch modes
+                if navigator.is_goal_reached:
+                    print("Arrived at ball location. Switching to Pick.")
+                    state.mode = "pick"
+                    state.arm_state = "lower"
+                    state.targeting_active = False
+                    
+
+
+            # Determine which message to send
+            if navigator.manual_override_msg != "":
+                final_msg = navigator.manual_override_msg
+            else:
+                # Get the driving velocities from the navigator (odometry)
+                final_msg = f"{navigator.lin_vel:.2f},{navigator.ang_vel:.2f},0,0,10\n"
+
+            # ACTUALLY SEND TO PICO
+            pico.update_command(final_msg)
+          #------------------------------------------------------------------------------  
+    
+
+    finally:
+        engine.stop()
+        pipeline.stop()
+        pico.stop()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    user_data = user_app_callback_class()  # Create an instance of the user app callback class
-    app = GStreamerDetectionApp(app_callback, user_data)
-    app.run()
+    main()
