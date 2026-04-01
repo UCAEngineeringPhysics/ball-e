@@ -9,8 +9,8 @@ class BlindNavigator:
         self.pico_msngr = Serial(port="/dev/ttyACM0", baudrate=115200, timeout=0.01)
         print(f"Messenger initiated at: {self.pico_msngr.name}\n")
 
-        #For arm movement commands, initialize as empty string
-        self.manual_override_msg = "" 
+        # For arm movement commands, initialize as empty string
+        self.manual_override_msg = ""
 
         # Variables
         self.is_goal_reached = True
@@ -34,23 +34,23 @@ class BlindNavigator:
             dt = curr_ts - last_ts
             # if (curr_ts - last_ts) >= 0.04:  # TX freq: 25 Hz
             if dt >= 0.04:  # TX freq: 25 Hz
-
-            # Message for arm movement is recieved
+                # Message for arm movement is recieved
                 if self.manual_override_msg:
                     # Send the specific arm/mode string (e.g., from your state machine)
                     msg_to_pico = self.manual_override_msg
 
-            # Message for odometry/obj det navigation
+                # Message for odometry/obj det navigation
                 elif not self.is_goal_reached:
                     self.compute_target_velocity()
-                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f}, {0.0:.3f},{0.0:.3f},{10.0:.3f}\n"
-            
-            # Idle message (no robot or arm movement)    
+
+                # Idle message (no robot or arm movement)
                 else:
                     # Idle
                     msg_to_pico = "0.0,0.0,0.0,0.0,10.0\n"
 
                 # Encode string to bytes and send
+                msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f}, {0.0:.3f},{0.0:.3f},{10.0:.3f}\n"
+
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
                 last_ts = curr_ts
                 # Update odometry
@@ -151,3 +151,4 @@ if __name__ == "__main__":
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
     print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+
