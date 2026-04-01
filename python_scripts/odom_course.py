@@ -110,37 +110,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
                 break
     return found
 
-class PicoThreadedInterface:
-    def __init__(self, port='/dev/ttyACM0', baudrate=115200):
-        self.ser = serial.Serial(port=port, baudrate=baudrate, timeout=0.01)
-        self.latest_msg = "0.0,0.0,0,0,10\n"
-        self.running = True
-        self.interval = 0.02  # 50Hz (20ms)
-        
-        # Start the background thread
-        self.thread = threading.Thread(target=self._control_loop, daemon=True)
-        self.thread.start()
 
-    def _control_loop(self):
-        while self.running:
-            self.ser.write(self.latest_msg.encode('utf-8'))
-            try:
-                if self.ser.in_waiting > 0:
-                    self.ser.readline()
-                    sleep(0.02)
-            except Exception:
-                pass
-            
-
-    def update_command(self, msg):
-        if not msg.endswith('\n'):
-            msg += '\n'
-        self.latest_msg = msg
-
-    def stop(self):
-        self.running = False
-        self.ser.close()
-       
 # ---------------------------------------------------------
 # 1. HAILO INFERENCE CLASS (The "Engine")
 # ---------------------------------------------------------
@@ -234,13 +204,8 @@ def main():
     parser.add_argument("--input", default=None, help="Ignored: RealSense is hardcoded")
     args = parser.parse_args()
 
-    # A. Setup navigotro
+    # A. Setup navigator
     navigator = BlindNavigator()
-
-    # Initialize Serial communication
-    pico = PicoThreadedInterface('/dev/ttyACM0')
-    print(f"Messegner initiated\n")
-
 
     # B. Setup Hailo
     engine = HailoRemoteInference(args.hef_path, args.labels_json)
@@ -315,7 +280,7 @@ def main():
                 navigator.manual_override_msg= "0.0,0.0,0,0,0\n"
 
             elif state.mode == "pick":
-                        # Always reset arm state when entering pick
+                    # Always reset arm state when entering pick
                     if state.arm_state == "idle":
                         state.arm_state = "lower"
                         state.picker_counter = 0
@@ -377,8 +342,6 @@ def main():
                 # Get the driving velocities from the navigator (odometry)
                 final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,10\n"
 
-            # ACTUALLY SEND TO PICO
-            pico.update_command(final_msg)
           #------------------------------------------------------------------------------  
     
 
