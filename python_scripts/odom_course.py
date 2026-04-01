@@ -124,9 +124,13 @@ class PicoThreadedInterface:
     def _control_loop(self):
         while self.running:
             self.ser.write(self.latest_msg.encode('utf-8'))
-            if self.ser.in_waiting>0:
-                self.ser.readline()
-            sleep(0.02)
+            try:
+                if self.ser.in_waiting > 0:
+                    self.ser.readline()
+                    sleep(0.02)
+            except Exception:
+                pass
+            
 
     def update_command(self, msg):
         if not msg.endswith('\n'):
@@ -281,7 +285,6 @@ def main():
             detections = engine.get_latest_result()
 
 
-
             # Display obj detection in real time
             for label, conf, bbox in detections:
                 # Convert normalized coordinates (0.0-1.0) to pixel coordinates
@@ -309,7 +312,7 @@ def main():
     # ------------------------------------MODES-------------------------------------------
             
             if state.mode == "pause":
-                navigator.manual_override_msg= "0.0, 0.0, 0, 0, 0\n"
+                navigator.manual_override_msg= "0.0,0.0,0,0,0\n"
 
             elif state.mode == "pick":
                         # Always reset arm state when entering pick
@@ -317,27 +320,27 @@ def main():
                         state.arm_state = "lower"
                         state.picker_counter = 0
                         
-                    navigator.manual_override_msg = "0.0, 0.0, 0, 0, 0\n"
+                    navigator.manual_override_msg = "0.0,0.0,0,0,0\n"
                     if state.arm_state == "lower":
                     # Pass the arm string to the navigator override
-                        navigator.manual_override_msg= "0.0, 0.0, 3000, 0, 0\n"
+                        navigator.manual_override_msg= "0.0,0.0,3000,0,0\n"
                         state.picker_counter += 1
                         if state.picker_counter >= 210:
                             state.arm_state = "close"
                             state.picker_counter = 0
                             
                     elif state.arm_state == "close":
-                        navigator.manual_override_msg = "0.0, 0.0, 0, 3000, 0\n"
+                        navigator.manual_override_msg = "0.0,0.0,0,3000,0\n"
                         state.picker_counter += 1
                         if state.picker_counter >= 70:
                             state.arm_state = "raise"
                             state.picker_counter = 0
                             
                     elif state.arm_state == "raise":
-                        navigator.manual_override_msg = "0.0, 0.0, -3000, 0, 0\n"
+                        navigator.manual_override_msg = "0.0,0.0,-3000,0,0\n"
                         state.picker_counter += 1
                         if state.picker_counter >= 180:
-                            navigator.manual_override_msg = "0.0, 0.0, 0, 0, 0\n"
+                            navigator.manual_override_msg = "0.0,0.0,0,0,0\n"
                             state.mode = "fixed_bucket" #"pause" for testing
                             state.targeting_active = False  # Reset
                             state.picker_counter = 0
@@ -372,7 +375,7 @@ def main():
                 final_msg = navigator.manual_override_msg
             else:
                 # Get the driving velocities from the navigator (odometry)
-                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,0\n"
+                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,10\n"
 
             # ACTUALLY SEND TO PICO
             pico.update_command(final_msg)
