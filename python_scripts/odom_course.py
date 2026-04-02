@@ -69,7 +69,9 @@ def process_targeting(navigator, depth_frame, detections, target_label):
     """
     found = False
     for label, conf, bbox in detections:
-        if conf > 0.5 and label == target_label:
+        if conf < 0.5
+            continue
+        if label == target_label:
             x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
             y1 = int(bbox.ymin() * 480)
             x2 = int(bbox.xmax() * 640)
