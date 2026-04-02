@@ -60,36 +60,36 @@ class BlindNavigator:
                 )  # restrict theta between -pi and pi
                 last_ts = curr_ts
 
-# RX: Robust Read
-            if self.pico_msngr.inWaiting() > 0:
-                try:
-                    line = self.pico_msngr.readline().decode("utf-8", "ignore").strip()
-                    if line:
-                        data_strings = line.split(",")
-                        if len(data_strings) >= 2:
-                            self.motion_data["meas_lin_vel"] = float(data_strings[0])
-                            self.motion_data["fuse_ang_vel"] = float(data_strings[1])
-                except (ValueError, IndexError):
-                    pass # Ignore mangled serial data
+# # RX: Robust Read
+#             if self.pico_msngr.inWaiting() > 0:
+#                 try:
+#                     line = self.pico_msngr.readline().decode("utf-8", "ignore").strip()
+#                     if line:
+#                         data_strings = line.split(",")
+#                         if len(data_strings) >= 2:
+#                             self.motion_data["meas_lin_vel"] = float(data_strings[0])
+#                             self.motion_data["fuse_ang_vel"] = float(data_strings[1])
+#                 except (ValueError, IndexError):
+#                     pass # Ignore mangled serial data
     
-            # # Receive motion data from Pico
-            # if self.pico_msngr.inWaiting() > 0:
-            #     msg_from_pico = (
-            #         self.pico_msngr.readline().decode("utf-8", "ignore").strip()
-            #     )
-            #     if msg_from_pico:
-            #         data_strings = msg_from_pico.split(",")
-            #         try:
-            #             self.motion_data.update(
-            #                 zip(
-            #                     self.motion_data.keys(),
-            #                     map(
-            #                         float, data_strings
-            #                     ),  # convert all str in list to float
-            #                 )
-            #             )
-            #         except ValueError:
-            #             pass
+            # Receive motion data from Pico
+            if self.pico_msngr.inWaiting() > 0:
+                msg_from_pico = (
+                    self.pico_msngr.readline().decode("utf-8", "ignore").strip()
+                )
+                if msg_from_pico:
+                    data_strings = msg_from_pico.split(",")
+                    try:
+                        self.motion_data.update(
+                            zip(
+                                self.motion_data.keys(),
+                                map(
+                                    float, data_strings
+                                ),  # convert all str in list to float
+                            )
+                        )
+                    except ValueError:
+                        pass
 
     def compute_target_velocity(
         self,
