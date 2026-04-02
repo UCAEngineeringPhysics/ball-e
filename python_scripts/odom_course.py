@@ -80,7 +80,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
             cy = (y1 + y2) // 2
             # Compute goal coords
             depth_in_meters = depth_frame.get_distance(cx, cy)
-            # print(f"depth: {depth_in_meters}m")  # debug
+            print(f"depth: {depth_in_meters}m")  # debug
             if depth_in_meters > 0:
                 intrinsics = (
                     depth_frame.profile.as_video_stream_profile().intrinsics
@@ -320,7 +320,7 @@ def main():
                 
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
-                    print("Setting initial search waypoint...")
+                    print("Setting waypoint for fixed ball...")
                     navigator.set_goal(5.0, 0.0) # Coordinates for first way point
                     state.targeting_active = True 
                     sleep(0.1)
