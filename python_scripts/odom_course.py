@@ -119,7 +119,6 @@ class HailoRemoteInference:
         Gst.init(None)
         self.running = False
         self.detection_queue = queue.Queue(maxsize=1)
-
         # Determine Post-Process Shared Object
         post_process_so = "/usr/lib/aarch64-linux-gnu/hailo/tappas/post_processes/libyolo_hailortpp_post.so"
 
@@ -232,7 +231,7 @@ def main():
 
     print("System Running. Press 'q' to quit.")
 
-    navigator.set_goal(2.0, 0.0)
+    #navigator.set_goal(5.0, 0.0)
 
     try:
         while True:
@@ -297,14 +296,14 @@ def main():
                     elif state.arm_state == "close":
                         navigator.manual_override_msg = "0.0,0.0,0,3000,0\n"
                         state.picker_counter += 1
-                        if state.picker_counter >= 70:
+                        if state.picker_counter >= 280:
                             state.arm_state = "raise"
                             state.picker_counter = 0
                             
                     elif state.arm_state == "raise":
                         navigator.manual_override_msg = "0.0,0.0,-3000,0,0\n"
                         state.picker_counter += 1
-                        if state.picker_counter >= 180:
+                        if state.picker_counter >= 220:
                             navigator.manual_override_msg = "0.0,0.0,0,0,0\n"
                             state.mode = "fixed_bucket" #"pause" for testing
                             state.targeting_active = False  # Reset
@@ -320,9 +319,10 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting initial search waypoint...")
-                    navigator.set_goal(2.0, 0.0) # Coordinates for first way point
+                    navigator.set_goal(5.0, 0.0) # Coordinates for first way point
                     state.targeting_active = True 
-                    
+                    sleep(0.1)
+
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(navigator, depth_frame, detections, "ball")
                 
@@ -340,7 +340,7 @@ def main():
                 final_msg = navigator.manual_override_msg
             else:
                 # Get the driving velocities from the navigator (odometry)
-                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,10\n"
+                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,0\n"
 
           #------------------------------------------------------------------------------  
     
@@ -348,7 +348,6 @@ def main():
     finally:
         engine.stop()
         pipeline.stop()
-        pico.stop()
         cv2.destroyAllWindows()
 
 
