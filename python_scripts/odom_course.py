@@ -101,7 +101,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
                         np.array(goal_coords[:2])
                         - np.array((navigator.goal_x, navigator.goal_y))
                     )
-                    > 0.02
+                    > 0.01
                 ):  # update goal when necessary
                     navigator.set_goal(goal_coords[0], goal_coords[1])
                     print(f"Set goal at: {goal_coords}")
@@ -333,14 +333,6 @@ def main():
                     state.arm_state = "lower"
                     state.targeting_active = False
                     
-
-
-            # Determine which message to send
-            if navigator.manual_override_msg != "":
-                final_msg = navigator.manual_override_msg
-            else:
-                # Get the driving velocities from the navigator (odometry)
-                final_msg = f"{navigator.targ_lin_vel:.2f},{navigator.targ_ang_vel:.2f},0,0,0\n"
 
           #------------------------------------------------------------------------------  
     
