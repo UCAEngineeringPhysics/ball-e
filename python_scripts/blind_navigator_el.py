@@ -13,7 +13,7 @@ class BlindNavigator:
         self.manual_override_msg = ""
 
         # Variables
-        self.is_goal_reached = True
+        self.is_goal_reached = False
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
@@ -46,11 +46,9 @@ class BlindNavigator:
                 # Idle message (no robot or arm movement)
                 else:
                     # Idle
-                    msg_to_pico = "0.0,0.0,0.0,0.0,10.0\n"
+                    msg_to_pico = "0.0,0.0,0,0,0\n"
 
-                # Encode string to bytes and send
-                msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f}, {0.0:.3f},{0.0:.3f},{10.0:.3f}\n"
-
+         
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
 
                 # Update odometry
@@ -164,4 +162,3 @@ if __name__ == "__main__":
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
     print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-
