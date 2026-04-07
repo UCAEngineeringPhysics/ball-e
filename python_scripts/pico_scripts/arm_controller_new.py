@@ -4,7 +4,7 @@ from time import sleep
 
 # CONSTANTS
 CLAW_OPEN = 1_800_000  # nano sec
-CLAW_CLOSE = 2_550_000
+CLAW_CLOSE = 2_400_000
 SHOULDER_UP = 1_500_000
 SHOULDER_MID = 1_000_000
 SHOULDER_DOWN = 500_000
@@ -31,7 +31,7 @@ class ArmController:
         self.target_claw = CLAW_OPEN
         self.target_shoa = SHOULDER_UP
         self.target_shob = SHOULDER_UP
-        self.is_target_reached = True
+        self.is_target_reached = False
         # Set joint pos timer
         self.joints_set_timer = Timer(
             freq=25,
@@ -121,3 +121,4 @@ if __name__ == "__main__":
     while ac.is_target_reached is False:
         sleep(0.1)
     print(f"arm reached position: {ac.pulse_width_claw}, {ac.pulse_width_shoa}")
+
