@@ -21,7 +21,10 @@ class BlindNavigator:
         self.goal_y = 0.0
         self.targ_lin_vel = 0.0
         self.targ_ang_vel = 0.0
-        self.motion_data = {key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel"]}
+        #*****
+        self.goal_status = 0.0
+        #*****
+        self.motion_data = {key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]}
         self.last_ts = time()  # time stamp in s
         self.pico_thread = threading.Thread(target=self.process_pico_msgs, daemon=True)
         self.pico_thread.start()
@@ -42,11 +45,11 @@ class BlindNavigator:
                 # Message for odometry/obj det navigation
                 elif not self.is_goal_reached:
                     self.compute_target_velocity()
-                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f},0,0,0\n"
+                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f},1800000,1500000\n"
                 # Idle message (no robot or arm movement)
                 else:
                     # Idle
-                    msg_to_pico = "0.0,0.0,0,0,0\n"
+                    msg_to_pico = "0.0,0.0,1800000,1500000\n"
 
          
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
@@ -59,18 +62,9 @@ class BlindNavigator:
                     sin(self.theta), cos(self.theta)
                 )  # restrict theta between -pi and pi
                 last_ts = curr_ts
-
-# # RX: Robust Read
-#             if self.pico_msngr.inWaiting() > 0:
-#                 try:
-#                     line = self.pico_msngr.readline().decode("utf-8", "ignore").strip()
-#                     if line:
-#                         data_strings = line.split(",")
-#                         if len(data_strings) >= 2:
-#                             self.motion_data["meas_lin_vel"] = float(data_strings[0])
-#                             self.motion_data["fuse_ang_vel"] = float(data_strings[1])
-#                 except (ValueError, IndexError):
-#                     pass # Ignore mangled serial data
+                #*****
+                self.goal_status = self.motion_data["goal_met"]
+                #*****
     
             # Receive motion data from Pico
             if self.pico_msngr.inWaiting() > 0:
