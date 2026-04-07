@@ -8,8 +8,12 @@ class BlindNavigator:
     def __init__(self) -> None:
         self.pico_msngr = Serial(port="/dev/ttyACM0", baudrate=115200, timeout=0.01)
         print(f"Messenger initiated at: {self.pico_msngr.name}\n")
+
+        # For arm movement commands, initialize as empty string
+        self.manual_override_msg = ""
+
         # Variables
-        self.is_goal_reached = True
+        self.is_goal_reached = False
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
@@ -30,14 +34,23 @@ class BlindNavigator:
             dt = curr_ts - last_ts
             # if (curr_ts - last_ts) >= 0.04:  # TX freq: 25 Hz
             if dt >= 0.04:  # TX freq: 25 Hz
-                if not self.is_goal_reached:
+                # Message for arm movement is recieved
+                if self.manual_override_msg:
+                    # Send the specific arm/mode string (e.g., from your state machine)
+                    msg_to_pico = self.manual_override_msg
+
+                # Message for odometry/obj det navigation
+                elif not self.is_goal_reached:
                     self.compute_target_velocity()
+                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f},0,0,0\n"
+                # Idle message (no robot or arm movement)
                 else:
-                    pass  # TODO: hard coded vels
-                msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f}\n"
-                # Encode string to bytes and send
+                    # Idle
+                    msg_to_pico = "0.0,0.0,0,0,0\n"
+
+         
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
-                last_ts = curr_ts
+
                 # Update odometry
                 self.x += self.motion_data["meas_lin_vel"] * cos(self.theta) * dt
                 self.y += self.motion_data["meas_lin_vel"] * sin(self.theta) * dt
@@ -45,7 +58,20 @@ class BlindNavigator:
                 self.theta = atan2(
                     sin(self.theta), cos(self.theta)
                 )  # restrict theta between -pi and pi
+                last_ts = curr_ts
 
+# # RX: Robust Read
+#             if self.pico_msngr.inWaiting() > 0:
+#                 try:
+#                     line = self.pico_msngr.readline().decode("utf-8", "ignore").strip()
+#                     if line:
+#                         data_strings = line.split(",")
+#                         if len(data_strings) >= 2:
+#                             self.motion_data["meas_lin_vel"] = float(data_strings[0])
+#                             self.motion_data["fuse_ang_vel"] = float(data_strings[1])
+#                 except (ValueError, IndexError):
+#                     pass # Ignore mangled serial data
+    
             # Receive motion data from Pico
             if self.pico_msngr.inWaiting() > 0:
                 msg_from_pico = (
