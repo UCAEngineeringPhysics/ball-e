@@ -6,7 +6,7 @@ import sys
 from utime import ticks_us, ticks_diff
 import select
 from machine import freq
-from mobile_base.arm_controller import ArmController
+from manipulation.arm_controller import ArmController
 from mobile_base.diff_drive_controller import DiffDriveController
 from perception.inertial_sensor import MPU6050
 
@@ -45,8 +45,8 @@ while True:
         shoulder_duty_a = arm.target_shoa
         shoulder_duty_b = arm.target_shob
         claw_duty = arm.target_claw
-        goal_met = arm.is_target_reached()
-        out_msg = f"{meas_lin_vel:.3f},{fuse_ang_vel:.3f}, {goal_met:.3f}"
+        goal_met = int(arm.is_target_reached)
+        out_msg = f"{meas_lin_vel:.3f},{fuse_ang_vel:.3f}, {goal_met}"
         print(out_msg)  # main.py will send this to computer
         last_us = now_us  # update last time stamp
     # Receive data (RX)
@@ -57,8 +57,9 @@ while True:
         if len(targ_vels) == 4:
             targ_lin_vel = float(targ_vels[0])
             targ_ang_vel = float(targ_vels[1])
-            shoa_pw = int(targ_vels[2])
-            claw_pw = int(targ_vels[4])
+            claw_pw = int(targ_vels[2])
+            shoa_pw = int(targ_vels[3])
             mobile_base.set_vels(targ_lin_vel, targ_ang_vel)
-            arm.set_joint_positions(shoa_pw, claw_pw)
+            arm.set_joint_positions(claw_pw, shoa_pw)
              
+
