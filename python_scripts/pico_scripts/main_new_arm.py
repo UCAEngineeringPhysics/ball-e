@@ -45,8 +45,8 @@ while True:
         shoulder_duty_a = arm.target_shoa
         shoulder_duty_b = arm.target_shob
         claw_duty = arm.target_claw
-        goal_reached = arm.is_target_reached()
-        out_msg = f"{meas_lin_vel:.3f},{fuse_ang_vel:.3f}, {goal_reached:.3f}"
+        goal_met = arm.is_target_reached()
+        out_msg = f"{meas_lin_vel:.3f},{fuse_ang_vel:.3f}, {goal_met:.3f}"
         print(out_msg)  # main.py will send this to computer
         last_us = now_us  # update last time stamp
     # Receive data (RX)
