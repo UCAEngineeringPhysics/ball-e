@@ -40,7 +40,7 @@ def transform_cam_to_odom(coords_cam, robot_pose):
     # 2. Static Transformation: camera_link to base_link
     R_c_b = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
     t_c_b = np.array(
-        [-0.7, 0.0, 0.2],  # 0.64 is the gap between camera and ball
+        [-0.63, 0.0, 0.2],  # 0.64 is the gap between camera and ball
     )  # Set camera displacement from robot's base center
 
     # Calculate point in base_link
@@ -62,7 +62,7 @@ def transform_cam_to_odom(coords_cam, robot_pose):
 
 
 #Function for odometry navigation (logic from greenball_follower)
-def process_targeting(navigator, depth_frame, detections, target_label):
+def process_targeting(navigator, depth_frame, detections, target_label, claw_pw, shoa_pw):
     """
     Looks for a specific label in detections and updates navigator goal.
     Returns: True if target found/updated, False otherwise.
@@ -102,7 +102,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
                     )
                     > 0.01
                 ):  # update goal when necessary
-                    navigator.set_goal(goal_coords[0], goal_coords[1], )
+                    navigator.set_goal(goal_coords[0], goal_coords[1],claw_pw, shoa_pw )
                     print(f"Set goal at: {goal_coords}")
                 print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
                 break
@@ -251,19 +251,19 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1800000,600000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1800000,550000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg= "0.0,0.0,1800000,600000\n"
+                    navigator.manual_override_msg= "0.0,0.0,1800000,550000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg= "0.0,0.0,2490000,600000\n"
+                        navigator.manual_override_msg= "0.0,0.0,2490000,550000\n"
                         sleep(0.2)
 
                        
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg= "0.0,0.0,2490000,600000\n"
+                    navigator.manual_override_msg= "0.0,0.0,2490000,550000\n"
                     sleep(0.1)   
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
@@ -338,12 +338,12 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
-                    navigator.set_goal(2.0, 0.0,1800000,1500000) # Coordinates for first way point
+                    navigator.set_goal(5.0, 0.0,1800000,1500000) # Coordinates for first way point
                     state.targeting_active = True 
                     #sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
-                process_targeting(navigator, depth_frame, detections, "green ball")
+                process_targeting(navigator, depth_frame, detections, "green ball", 1800000,1500000)
                 
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
@@ -383,12 +383,12 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed bucket...")
-                    navigator.set_goal(4.0, 0.0,2490000,1500000) # Coordinates for first way point
+                    navigator.set_goal(10.0, 0.0,2490000,1500000) # Coordinates for first way point
                     state.targeting_active = True 
                     #sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
-                process_targeting(navigator, depth_frame, detections, "green bucket")
+                process_targeting(navigator, depth_frame, detections, "green bucket", 2490000,1500000)
                 
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
