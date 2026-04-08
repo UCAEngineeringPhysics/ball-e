@@ -1,6 +1,6 @@
 from blind_navigator_el import BlindNavigator
 
-#Import to save modes and counters
+# Import to save modes and counters
 from types import SimpleNamespace
 
 
@@ -14,7 +14,7 @@ import hailo
 
 import gi
 
-#******************
+# ******************
 import serial
 import threading
 from time import sleep
@@ -23,7 +23,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
 
-def transform_cam_to_odom(coords_cam, robot_pose):
+def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.63):
     """
     Transforms a 3D point from the camera frame to the odom frame.
 
@@ -40,7 +40,7 @@ def transform_cam_to_odom(coords_cam, robot_pose):
     # 2. Static Transformation: camera_link to base_link
     R_c_b = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
     t_c_b = np.array(
-        [-0.63, 0.0, 0.2],  # 0.64 is the gap between camera and ball
+        [dist_offset, 0.0, 0.2],  # use dist_offset to govern stop distance
     )  # Set camera displacement from robot's base center
 
     # Calculate point in base_link
@@ -61,14 +61,16 @@ def transform_cam_to_odom(coords_cam, robot_pose):
     return coords_odom
 
 
-#Function for odometry navigation (logic from greenball_follower)
-def process_targeting(navigator, depth_frame, detections, target_label, claw_pw, shoa_pw):
+# Function for odometry navigation (logic from greenball_follower)
+def process_targeting(
+    navigator, depth_frame, detections, target_label, claw_pw, shoa_pw
+):
     """
     Looks for a specific label in detections and updates navigator goal.
     Returns: True if target found/updated, False otherwise.
     """
     for label, conf, bbox in detections:
-        if conf > 0.5 and label == target_label:            
+        if conf > 0.5 and label == target_label:
             x1 = int(bbox.xmin() * 640)  # Map bbox (0.0-1.0) to 640x480
             y1 = int(bbox.ymin() * 480)
             x2 = int(bbox.xmax() * 640)
@@ -79,9 +81,7 @@ def process_targeting(navigator, depth_frame, detections, target_label, claw_pw,
             depth_in_meters = depth_frame.get_distance(cx, cy)
             print(f"depth: {depth_in_meters}m")  # debug
             if depth_in_meters > 0:
-                intrinsics = (
-                    depth_frame.profile.as_video_stream_profile().intrinsics
-                )
+                intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
                 coords_cam = rs.rs2_deproject_pixel_to_point(
                     intrinsics,
                     [cx, cy],
@@ -90,11 +90,18 @@ def process_targeting(navigator, depth_frame, detections, target_label, claw_pw,
                 # print(
                 #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
                 # )  # debug
+                if "ball" in target_label:
+                    dist_offset = -0.63
+                else:
+                    dist_offset = -0.5
                 goal_coords = transform_cam_to_odom(
                     (coords_cam[0], coords_cam[1], coords_cam[2]),
                     (navigator.x, navigator.y, navigator.theta),
+                    dist_offset=dist_offset,
                 )
-                print(f"Goal coors in odom: {goal_coords}")
+                print(
+                    f"Goal coors in odom: {goal_coords}, distance offset: {dist_offset}"
+                )
                 if (
                     np.linalg.norm(
                         np.array(goal_coords[:2])
@@ -102,7 +109,7 @@ def process_targeting(navigator, depth_frame, detections, target_label, claw_pw,
                     )
                     > 0.01
                 ):  # update goal when necessary
-                    navigator.set_goal(goal_coords[0], goal_coords[1],claw_pw, shoa_pw )
+                    navigator.set_goal(goal_coords[0], goal_coords[1], claw_pw, shoa_pw)
                     print(f"Set goal at: {goal_coords}")
                 print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
                 break
@@ -189,6 +196,7 @@ class HailoRemoteInference:
         except queue.Empty:
             return []
 
+
 # ---------------------------------------------------------
 # 2. MAIN ROBOT LOGIC
 # ---------------------------------------------------------
@@ -211,9 +219,9 @@ def main():
     state = SimpleNamespace(
         mode="fixed_ball",
         arm_state="idle",
-        picker_counter = 0,
-        lap_counter = 0,
-        targeting_active = False, #Initialize as False
+        picker_counter=0,
+        lap_counter=0,
+        targeting_active=False,  # Initialize as False
     )
 
     # C. Setup RealSense
@@ -228,7 +236,7 @@ def main():
 
     print("System Running. Press 'q' to quit.")
 
-    #navigator.set_goal(5.0, 0.0)
+    # navigator.set_goal(5.0, 0.0)
 
     try:
         while True:
@@ -242,10 +250,10 @@ def main():
             img_color = np.asanyarray(color_frame.get_data())
             img_display = cv2.cvtColor(img_color, cv2.COLOR_RGB2BGR)
 
-    # ------------------------------------MODES-------------------------------------------
-            
+            # ------------------------------------MODES-------------------------------------------
+
             if state.mode == "pause":
-                navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
+                navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
 
             elif state.mode == "pick":
                 # # Always reset arm state when entering pick
@@ -254,27 +262,26 @@ def main():
                     navigator.manual_override_msg = "0.0,0.0,1800000,550000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg= "0.0,0.0,1800000,550000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1800000,550000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg= "0.0,0.0,2490000,550000\n"
+                        navigator.manual_override_msg = "0.0,0.0,2490000,550000\n"
                         sleep(0.2)
 
-                       
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg= "0.0,0.0,2490000,550000\n"
-                    sleep(0.1)   
+                    navigator.manual_override_msg = "0.0,0.0,2490000,550000\n"
+                    sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg= "0.0,0.0,2490000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,2490000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg= "0.0,0.0,2490000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,2490000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
-                        state.mode = "fixed_bucket" #"pause" for testing
+                        state.mode = "fixed_bucket"  # "pause" for testing
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
@@ -285,38 +292,37 @@ def main():
                     navigator.manual_override_msg = "0.0,0.0,2490000,1100000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg= "0.0,0.0,2490000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,2490000,1100000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "open"
-                        navigator.manual_override_msg= "0.0,0.0,1800000,1100000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1800000,1100000\n"
                         sleep(0.2)
 
-                       
                 elif state.arm_state == "open":
-                    navigator.manual_override_msg= "0.0,0.0,1800000,1100000\n"
-                    sleep(0.1)   
+                    navigator.manual_override_msg = "0.0,0.0,1800000,1100000\n"
+                    sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
-                        state.mode = "pause" #"pause" for testing
+                        state.mode = "pause"  # "pause" for testing
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
             elif state.mode == "fixed_ball":
-                #Regular odometry driving (set string to empty)
-                navigator.manual_override_msg = "" 
+                # Regular odometry driving (set string to empty)
+                navigator.manual_override_msg = ""
                 # 2. Infer
                 engine.infer_frame(img_color)
                 detections = engine.get_latest_result()
 
-                #************************************************************************
+                # ************************************************************************
                 # Display obj detection in real time
                 for label, conf, bbox in detections:
                     # Convert normalized coordinates (0.0-1.0) to pixel coordinates
@@ -331,37 +337,47 @@ def main():
 
                     # Add Label and Confidence
                     text = f"{label}: {conf:.2f}"
-                    cv2.putText(img_display, text, (x1, y1 - 10), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                #************************************************************************
+                    cv2.putText(
+                        img_display,
+                        text,
+                        (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        color,
+                        2,
+                    )
+                # ************************************************************************
 
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
-                    navigator.set_goal(5.0, 0.0,1800000,1500000) # Coordinates for first way point
-                    state.targeting_active = True 
-                    #sleep(0.1)
+                    navigator.set_goal(
+                        5.0, 0.0, 1800000, 1500000
+                    )  # Coordinates for first way point
+                    state.targeting_active = True
+                    # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
-                process_targeting(navigator, depth_frame, detections, "green ball", 1800000,1500000)
-                
+                process_targeting(
+                    navigator, depth_frame, detections, "green ball", 1800000, 1500000
+                )
+
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
                     print("Arrived at ball location. Switching to Pick.")
                     state.mode = "pick"
                     state.arm_state = "lower"
                     state.targeting_active = False
-                    
 
             elif state.mode == "fixed_bucket":
-                #Regular odometry driving (set string to empty)
-                navigator.manual_override_msg = "" 
+                # Regular odometry driving (set string to empty)
+                navigator.manual_override_msg = ""
 
                 # 2. Infer
                 engine.infer_frame(img_color)
                 detections = engine.get_latest_result()
 
-                #************************************************************************
+                # ************************************************************************
                 # Display obj detection in real time
                 for label, conf, bbox in detections:
                     # Convert normalized coordinates (0.0-1.0) to pixel coordinates
@@ -376,37 +392,48 @@ def main():
 
                     # Add Label and Confidence
                     text = f"{label}: {conf:.2f}"
-                    cv2.putText(img_display, text, (x1, y1 - 10), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                #************************************************************************
+                    cv2.putText(
+                        img_display,
+                        text,
+                        (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        color,
+                        2,
+                    )
+                # ************************************************************************
 
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed bucket...")
-                    navigator.set_goal(10.0, 0.0,2490000,1500000) # Coordinates for first way point
-                    state.targeting_active = True 
-                    #sleep(0.1)
+                    navigator.set_goal(
+                        0.0, 0.0, 2490000, 1500000
+                    )  # Coordinates for first way point
+                    state.targeting_active = True
+                    # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
-                process_targeting(navigator, depth_frame, detections, "green bucket", 2490000,1500000)
-                
+                process_targeting(
+                    navigator, depth_frame, detections, "green bucket", 2490000, 1500000
+                )
+
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
                     print("Arrived at bucket location. Switching to Drop.")
                     state.mode = "drop"
                     state.arm_state = "idle"
                     state.targeting_active = False
-                
 
-          #------------------------------------------------------------------------------  
+            # ------------------------------------------------------------------------------
             # Show the frame
-            cv2.putText(img_display, f"Mode: {state.mode}", (10, 30), 1, 1, (0, 255, 0), 2)
+            cv2.putText(
+                img_display, f"Mode: {state.mode}", (10, 30), 1, 1, (0, 255, 0), 2
+            )
             cv2.imshow("Robot View", img_display)
 
             # REQUIRED: This allows the window to refresh and catches the 'q' key to quit
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
-                          
 
     finally:
         engine.stop()
@@ -416,3 +443,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
