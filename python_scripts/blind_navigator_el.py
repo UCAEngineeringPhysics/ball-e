@@ -22,6 +22,8 @@ class BlindNavigator:
         self.targ_lin_vel = 0.0
         self.targ_ang_vel = 0.0
         #*****
+        self.claw_pw = 0.0
+        self.shoa_pw = 0.0
         self.goal_status = 0.0
         #*****
         self.motion_data = {key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]}
@@ -45,7 +47,7 @@ class BlindNavigator:
                 # Message for odometry/obj det navigation
                 elif not self.is_goal_reached:
                     self.compute_target_velocity()
-                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f},1800000,1500000\n"
+                    msg_to_pico = f"{self.targ_lin_vel:.3f},{self.targ_ang_vel:.3f},{self.claw_pw},{self.shoa_pw}\n"
                 # Idle message (no robot or arm movement)
                 else:
                     # Idle
@@ -99,6 +101,8 @@ class BlindNavigator:
         """
         dx = self.goal_x - self.x
         dy = self.goal_y - self.y
+
+
         distance_error = hypot(dx, dy)
         if distance_error < distance_tolerance:
             self.is_goal_reached = True
@@ -118,9 +122,16 @@ class BlindNavigator:
             self.targ_lin_vel = max(min(cmd_v, max_v), -max_v)
             self.targ_ang_vel = max(min(cmd_w, max_w), -max_w)
 
-    def set_goal(self, goal_x, goal_y):
+ 
+    
+
+    def set_goal(self, goal_x, goal_y,claw_pw,shoa_pw):
         self.goal_x = goal_x
         self.goal_y = goal_y
+        #*****
+        self.claw_pw = claw_pw
+        self.shoa_pw = shoa_pw
+
         self.is_goal_reached = False
 
 
