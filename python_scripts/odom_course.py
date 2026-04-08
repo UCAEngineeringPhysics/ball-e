@@ -248,35 +248,38 @@ def main():
                 navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
 
             elif state.mode == "pick":
-                    # Always reset arm state when entering pick
-                    if state.arm_state == "idle":
-                        state.arm_state = "lower"
-                        #state.picker_counter = 0
+                # # Always reset arm state when entering pick
+                if state.arm_state == "idle":
+                    state.arm_state = "lower"
+                    
+                navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
+                if state.arm_state == "lower":
+                    navigator.manual_override_msg= "0.0,0.0,1800000,500000\n"
+                    if navigator.goal_status == 0:
+                        sleep(0.1)
+                    #navigator.goal_status == 1:
+                    else:
+                        state.arm_state == "close"
+                       
+                elif state.arm_state == "close":
+                    navigator.manual_override_msg= "0.0,0.0,2400000,500000\n"
+                    if navigator.goal_status == 0:
+                        sleep(0.1)
+                #navigator.goal_status == 1:
+                    else:
+                        state.arm_state == "raise"
                         
-                    navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
-                    if state.arm_state == "lower":
-                    # Pass the arm string to the navigator override
-                        navigator.manual_override_msg= "0.0,0.0,1800000,500000\n"
-                        #state.picker_counter += 1
-                        #if state.picker_counter >= 260:
-                        if navigator.goal_status == 0:
-                            sleep(0.1)
-                        #navigator.goal_status == 1:
-                        else:
-                            state.arm_state = "idle"   #"raise"
-                            #state.picker_counter = 0
-                            
-                    # elif state.arm_state == "raise":
-                    #     navigator.manual_override_msg = "0.0,0.0,-3000,0\n"
-                    #     state.picker_counter += 1
-                    #     if state.picker_counter >= 250:
-                    #         navigator.manual_override_msg = "0.0,0.0,0,0\n"
-                    #         state.mode = "fixed_bucket" #"pause" for testing
-                    #         state.targeting_active = False  # Reset
-                    #         state.picker_counter = 0
-                    # idle = normal driving
-                    elif state.arm_state == "idle":
-                        pass   
+                elif state.arm_state == "raise":
+                    navigator.manual_override_msg= "0.0,0.0,2400000,1500000\n"
+                    if navigator.goal_status == 0:
+                        sleep(0.1)
+                #navigator.goal_status == 1:
+                    else:
+                        state.mode = "fixed_bucket" #"pause" for testing
+                        state.targeting_active = False  # Reset
+
+                elif state.arm_state == "idle":
+                    pass   
 
             elif state.mode == "fixed_ball":
                 #Regular odometry driving (set string to empty)
