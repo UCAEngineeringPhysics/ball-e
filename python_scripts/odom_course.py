@@ -40,7 +40,7 @@ def transform_cam_to_odom(coords_cam, robot_pose):
     # 2. Static Transformation: camera_link to base_link
     R_c_b = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
     t_c_b = np.array(
-        [-0.64, 0.0, 0.2],  # 0.64 is the gap between camera and ball
+        [-0.7, 0.0, 0.2],  # 0.64 is the gap between camera and ball
     )  # Set camera displacement from robot's base center
 
     # Calculate point in base_link
@@ -251,20 +251,19 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1800000,500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1800000,600000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    sleep(0.5)
-                    navigator.manual_override_msg= "0.0,0.0,1800000,500000\n"
+                    navigator.manual_override_msg= "0.0,0.0,1800000,600000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg= "0.0,0.0,2500000,500000\n"
+                        navigator.manual_override_msg= "0.0,0.0,2490000,600000\n"
                         sleep(0.2)
 
                        
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg= "0.0,0.0,2490000,500000\n"
+                    navigator.manual_override_msg= "0.0,0.0,2490000,600000\n"
                     sleep(0.1)   
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
@@ -279,8 +278,39 @@ def main():
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
+            elif state.mode == "drop":
+                # # Always reset arm state when entering pick
+                if state.arm_state == "idle":
+                    state.arm_state = "lower"
+                    navigator.manual_override_msg = "0.0,0.0,2490000,1100000\n"
+                    sleep(0.2)
+                if state.arm_state == "lower":
+                    navigator.manual_override_msg= "0.0,0.0,2490000,1100000\n"
+                    sleep(0.1)
+                    if navigator.goal_status == 1:
+                        state.arm_state = "open"
+                        navigator.manual_override_msg= "0.0,0.0,1800000,1100000\n"
+                        sleep(0.2)
+
+                       
+                elif state.arm_state == "open":
+                    navigator.manual_override_msg= "0.0,0.0,1800000,1100000\n"
+                    sleep(0.1)   
+                    if navigator.goal_status == 1:
+                        state.arm_state = "raise"
+                        navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
+                        sleep(0.2)
+
+                elif state.arm_state == "raise":
+                    navigator.manual_override_msg= "0.0,0.0,1800000,1500000\n"
+                    sleep(0.1)
+                    if navigator.goal_status == 1:
+                        state.mode = "pause" #"pause" for testing
+                        state.arm_state = "idle"
+                        state.targeting_active = False  # Reset
+
+
             elif state.mode == "fixed_ball":
-                sleep(0.5)
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
                 # 2. Infer
@@ -323,6 +353,50 @@ def main():
                     state.arm_state = "lower"
                     state.targeting_active = False
                     
+
+            elif state.mode == "fixed_bucket":
+                #Regular odometry driving (set string to empty)
+                navigator.manual_override_msg = "" 
+                # 2. Infer
+                engine.infer_frame(img_color)
+                detections = engine.get_latest_result()
+
+                #************************************************************************
+                # Display obj detection in real time
+                for label, conf, bbox in detections:
+                    # Convert normalized coordinates (0.0-1.0) to pixel coordinates
+                    x1 = int(bbox.xmin() * 640)
+                    y1 = int(bbox.ymin() * 480)
+                    x2 = int(bbox.xmax() * 640)
+                    y2 = int(bbox.ymax() * 480)
+
+                    # Draw the box (Green for ball, Blue for bucket, etc.)
+                    color = (0, 255, 0) if label == "bucket" else (255, 0, 0)
+                    cv2.rectangle(img_display, (x1, y1), (x2, y2), color, 2)
+
+                    # Add Label and Confidence
+                    text = f"{label}: {conf:.2f}"
+                    cv2.putText(img_display, text, (x1, y1 - 10), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                #************************************************************************
+
+                # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
+                if not state.targeting_active:
+                    print("Setting waypoint for fixed bucket...")
+                    navigator.set_goal(4.0, 0.0) # Coordinates for first way point
+                    state.targeting_active = True 
+                    #sleep(0.1)
+
+                # 2. Use obj detection (for *ball* specifically) to improve/update way point
+                process_targeting(navigator, depth_frame, detections, "green bucket")
+                
+                # 3. Robot has arrived at ball, switch modes
+                if navigator.is_goal_reached:
+                    print("Arrived at bucket location. Switching to Drop.")
+                    state.mode = "drop"
+                    state.arm_state = "idle"
+                    state.targeting_active = False
+                
 
           #------------------------------------------------------------------------------  
             # Show the frame
