@@ -251,37 +251,36 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    
-                navigator.manual_override_msg = "0.0,0.0,1800000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1800000,500000\n"
+                    sleep(0.2)
                 if state.arm_state == "lower":
+                    sleep(0.5)
                     navigator.manual_override_msg= "0.0,0.0,1800000,500000\n"
-                    if navigator.goal_status == 0:
-                        sleep(0.1)
-                    #navigator.goal_status == 1:
-                    else:
-                        state.arm_state == "close"
+                    sleep(0.1)
+                    if navigator.goal_status == 1:
+                        state.arm_state = "close"
+                        navigator.manual_override_msg= "0.0,0.0,2500000,500000\n"
+                        sleep(0.2)
+
                        
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg= "0.0,0.0,2400000,500000\n"
-                    if navigator.goal_status == 0:
-                        sleep(0.1)
-                #navigator.goal_status == 1:
-                    else:
-                        state.arm_state == "raise"
-                        
+                    navigator.manual_override_msg= "0.0,0.0,2490000,500000\n"
+                    sleep(0.1)   
+                    if navigator.goal_status == 1:
+                        state.arm_state = "raise"
+                        navigator.manual_override_msg= "0.0,0.0,2490000,1500000\n"
+                        sleep(0.2)
+
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg= "0.0,0.0,2400000,1500000\n"
-                    if navigator.goal_status == 0:
-                        sleep(0.1)
-                #navigator.goal_status == 1:
-                    else:
+                    navigator.manual_override_msg= "0.0,0.0,2490000,1500000\n"
+                    sleep(0.1)
+                    if navigator.goal_status == 1:
                         state.mode = "fixed_bucket" #"pause" for testing
+                        state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
-                elif state.arm_state == "idle":
-                    pass   
-
             elif state.mode == "fixed_ball":
+                sleep(0.5)
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
                 # 2. Infer
@@ -310,7 +309,7 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
-                    navigator.set_goal(5.0, 0.0) # Coordinates for first way point
+                    navigator.set_goal(2.0, 0.0) # Coordinates for first way point
                     state.targeting_active = True 
                     #sleep(0.1)
 
