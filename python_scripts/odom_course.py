@@ -102,7 +102,7 @@ def process_targeting(navigator, depth_frame, detections, target_label):
                     )
                     > 0.01
                 ):  # update goal when necessary
-                    navigator.set_goal(goal_coords[0], goal_coords[1])
+                    navigator.set_goal(goal_coords[0], goal_coords[1], )
                     print(f"Set goal at: {goal_coords}")
                 print(f"robot pose: {navigator.x, navigator.y, navigator.theta}")
                 break
@@ -309,7 +309,6 @@ def main():
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
-
             elif state.mode == "fixed_ball":
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
@@ -339,7 +338,7 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
-                    navigator.set_goal(2.0, 0.0) # Coordinates for first way point
+                    navigator.set_goal(2.0, 0.0,1800000,1500000) # Coordinates for first way point
                     state.targeting_active = True 
                     #sleep(0.1)
 
@@ -357,6 +356,7 @@ def main():
             elif state.mode == "fixed_bucket":
                 #Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = "" 
+
                 # 2. Infer
                 engine.infer_frame(img_color)
                 detections = engine.get_latest_result()
@@ -383,7 +383,7 @@ def main():
                 # 1. Set first way point - targeting_active is to help prevent resetting to OG way point during obj detection
                 if not state.targeting_active:
                     print("Setting waypoint for fixed bucket...")
-                    navigator.set_goal(4.0, 0.0) # Coordinates for first way point
+                    navigator.set_goal(4.0, 0.0,2490000,1500000) # Coordinates for first way point
                     state.targeting_active = True 
                     #sleep(0.1)
 
