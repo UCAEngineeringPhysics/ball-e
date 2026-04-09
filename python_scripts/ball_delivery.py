@@ -15,13 +15,6 @@ import gi
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
-# ******************
-import serial
-import threading
-
-
-# Import to save modes and counters
-
 
 def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.63):
     """

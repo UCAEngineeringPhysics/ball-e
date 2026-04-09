@@ -21,12 +21,14 @@ class BlindNavigator:
         self.goal_y = 0.0
         self.targ_lin_vel = 0.0
         self.targ_ang_vel = 0.0
-        #*****
+        # *****
         self.claw_pw = 0.0
         self.shoa_pw = 0.0
         self.goal_status = 0.0
-        #*****
-        self.motion_data = {key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]}
+        # *****
+        self.motion_data = {
+            key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]
+        }
         self.last_ts = time()  # time stamp in s
         self.pico_thread = threading.Thread(target=self.process_pico_msgs, daemon=True)
         self.pico_thread.start()
@@ -53,7 +55,6 @@ class BlindNavigator:
                     # Idle
                     msg_to_pico = "0.0,0.0,1800000,1500000\n"
 
-         
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
 
                 # Update odometry
@@ -64,10 +65,10 @@ class BlindNavigator:
                     sin(self.theta), cos(self.theta)
                 )  # restrict theta between -pi and pi
                 last_ts = curr_ts
-                #*****
+                # *****
                 self.goal_status = self.motion_data["goal_met"]
-                #*****
-    
+                # *****
+
             # Receive motion data from Pico
             if self.pico_msngr.inWaiting() > 0:
                 msg_from_pico = (
@@ -102,7 +103,6 @@ class BlindNavigator:
         dx = self.goal_x - self.x
         dy = self.goal_y - self.y
 
-
         distance_error = hypot(dx, dy)
         if distance_error < distance_tolerance:
             self.is_goal_reached = True
@@ -122,13 +122,10 @@ class BlindNavigator:
             self.targ_lin_vel = max(min(cmd_v, max_v), -max_v)
             self.targ_ang_vel = max(min(cmd_w, max_w), -max_w)
 
- 
-    
-
-    def set_goal(self, goal_x, goal_y,claw_pw,shoa_pw):
+    def set_goal(self, goal_x, goal_y, claw_pw, shoa_pw):
         self.goal_x = goal_x
         self.goal_y = goal_y
-        #*****
+        # *****
         self.claw_pw = claw_pw
         self.shoa_pw = shoa_pw
 
