@@ -1,26 +1,26 @@
-from blind_navigator_el import BlindNavigator
-
-# Import to save modes and counters
+from blind_navigator import BlindNavigator
 from types import SimpleNamespace
 
-
+from time import sleep
+import argparse
 import numpy as np
 import cv2
 
-import argparse
 import pyrealsense2 as rs
+
 import queue
 import hailo
-
 import gi
+
+gi.require_version("Gst", "1.0")
+from gi.repository import Gst, GLib
 
 # ******************
 import serial
 import threading
-from time import sleep
 
-gi.require_version("Gst", "1.0")
-from gi.repository import Gst, GLib
+
+# Import to save modes and counters
 
 
 def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.63):
@@ -30,32 +30,22 @@ def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.63):
     Args:
         coords_cam (list or tuple): (x_c, y_c, z_c) representing the object in the camera frame.
         robot_pose (list or tuple): (X, Y, theta) representing the robot's current odometry.
+        dist_offset (float): a constant roughly represents camera off distance from base center, which governs robot stopping distance to target.
     Returns:
         coords_odom (numpy.ndarray): [x_o, y_o, z_o] representing the object in the odom frame.
     """
-    # 1. Parse inputs into numpy arrays
     coords_cam_arr = np.array(coords_cam)
     X, Y, theta = robot_pose
-
-    # 2. Static Transformation: camera_link to base_link
+    # Static Transformation: camera_link to base_link
     R_c_b = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
-    t_c_b = np.array(
-        [dist_offset, 0.0, 0.2],  # use dist_offset to govern stop distance
-    )  # Set camera displacement from robot's base center
-
-    # Calculate point in base_link
+    t_c_b = np.array([dist_offset, 0.0, 0.2])
     # p_b = R_c_b @ coords_cam_arr + t_c_b
     coords_base_arr = R_c_b @ coords_cam_arr + t_c_b
-
-    # 3. Dynamic Transformation: base_link to odom
-    # Building the rotation matrix manually for speed (Z-axis rotation only)
+    # Dynamic Transformation: base_link to odom
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
-
     R_b_o = np.array([[cos_t, -sin_t, 0.0], [sin_t, cos_t, 0.0], [0.0, 0.0, 1.0]])
-    t_b_o = np.array([X, Y, 0.0])  # Robot's position on the ground plane
-
-    # Calculate final point in odom
+    t_b_o = np.array([X, Y, 0.0])
     coords_odom = R_b_o @ coords_base_arr + t_b_o
 
     return coords_odom
@@ -443,4 +433,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
