@@ -28,6 +28,8 @@ try:
         # Convert 2D pixel to 3D point (X, Y, Z in meters)
         point = rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], depth_in_meters)
 
-        print(f"3D World Coordinates (X, Y, Z): {point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f} meters")
+        print(
+            f"3D World Coordinates (X, Y, Z): {point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f} meters"
+        )
 finally:
-    pipeline.stop()   
+    pipeline.stop()
