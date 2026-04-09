@@ -3,11 +3,12 @@ from time import sleep
 
 
 # CONSTANTS
-CLAW_OPEN = 1_800_000  # nano sec
-CLAW_CLOSE = 2_400_000
+CLAW_OPEN = 1_700_000  # nano sec
+CLAW_CLOSE = 1_000_000
 SHOULDER_UP = 1_500_000
 SHOULDER_MID = 1_000_000
-SHOULDER_DOWN = 500_000
+SHOULDER_DOWN = 550_000
+SHOULDER_OFFSET = 100_000
 PULSE_WIDTH_INC_STEP = 5_000  # servo speed
 
 
@@ -27,10 +28,10 @@ class ArmController:
         # Variables
         self.pulse_width_claw = CLAW_OPEN
         self.pulse_width_shoa = SHOULDER_UP
-        self.pulse_width_shob = SHOULDER_UP
+        self.pulse_width_shob = SHOULDER_UP - SHOULDER_OFFSET
         self.target_claw = CLAW_OPEN
         self.target_shoa = SHOULDER_UP
-        self.target_shob = SHOULDER_UP
+        self.target_shob = SHOULDER_UP - SHOULDER_OFFSET
         self.is_target_reached = False
         # Set joint pos timer
         self.joints_set_timer = Timer(
@@ -44,11 +45,12 @@ class ArmController:
         target_claw=CLAW_OPEN,
         target_shoa=SHOULDER_UP,
     ):
-        self.target_claw = target_claw
-        self.target_shoa = target_shoa
-        self.target_shob = SHOULDER_UP - (target_shoa - SHOULDER_UP)
-        self.is_target_reached = False
-
+        if target_claw != self.target_claw or target_shoa != self.target_shoa:
+            self.is_target_reached = False
+            self.target_claw = target_claw
+            self.target_shoa = target_shoa
+            self.target_shob = SHOULDER_UP - (target_shoa - SHOULDER_UP) - SHOULDER_OFFSET
+        
     def manipulate_joints(self, timer):
         diff_claw = self.target_claw - self.pulse_width_claw
         diff_shoa = self.target_shoa - self.pulse_width_shoa
