@@ -352,7 +352,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
                     navigator.set_goal(
-                        4.0, 4.0, 1700000, 1500000
+                        3.0, 0.0, 1700000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -407,7 +407,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for fixed bucket...")
                     navigator.set_goal(
-                        1.0, 1.0, 1000000, 1500000
+                        0.0, 0.0, 1000000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -423,8 +423,6 @@ def main():
                     state.mode = "drop_1"
                     state.arm_state = "idle"
                     state.targeting_active = False
-
-
 
 
 
@@ -454,7 +452,7 @@ def main():
                     navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
-                        state.mode = "pause"  # "pause" for testing
+                        state.mode = "fixed_bucket_2"  # "pause" for testing
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
@@ -525,7 +523,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
                     navigator.set_goal(
-                        4.7, 3.7, 1700000, 1500000
+                        7.0, 0.0, 1700000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -580,7 +578,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for fixed bucket...")
                     navigator.set_goal(
-                        8.3, 8.7, 1000000, 1500000
+                        0.0, 0.0, 1000000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -636,7 +634,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for fixed ball...")
                     navigator.set_goal(
-                        6.0, 3.3, 1700000, 1500000
+                        5.0, 0.0, 1700000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -650,6 +648,7 @@ def main():
                 if navigator.is_goal_reached:
                     print("Arrived at midpoint location. Switching to fixed_ball_2.")
                     state.mode = "fixed_ball_2"
+                    state.targeting_active = False
 
 
 
