@@ -23,7 +23,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
 
-def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.63):
+def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.605):
     """
     Transforms a 3D point from the camera frame to the odom frame.
 
@@ -80,6 +80,7 @@ def process_targeting(
             # Compute goal coords
             depth_in_meters = depth_frame.get_distance(cx, cy)
             print(f"depth: {depth_in_meters}m")  # debug
+            print(label)
             if depth_in_meters > 0:
                 intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
                 coords_cam = rs.rs2_deproject_pixel_to_point(
@@ -91,9 +92,9 @@ def process_targeting(
                 #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
                 # )  # debug
                 if "ball" in target_label:
-                    dist_offset = -0.63
+                    dist_offset = -0.575
                 else:
-                    dist_offset = -0.5
+                    dist_offset = -0.445
                 goal_coords = transform_cam_to_odom(
                     (coords_cam[0], coords_cam[1], coords_cam[2]),
                     (navigator.x, navigator.y, navigator.theta),
@@ -255,7 +256,7 @@ def main():
             if state.mode == "pause":
                 navigator.manual_override_msg = "0.0,0.0,1700000,1500000\n"
 
-#*******************************         ARM          ****************************************************
+            # *******************************         ARM          ****************************************************
 
             elif state.mode == "pick_1":
                 # # Always reset arm state when entering pick
@@ -268,19 +269,19 @@ def main():
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.mode = "fixed_bucket_1"  # "pause" for testing
@@ -291,10 +292,10 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "open"
@@ -328,19 +329,19 @@ def main():
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.mode = "fixed_bucket_2"  # "pause" for testing
@@ -351,10 +352,10 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "open"
@@ -373,7 +374,7 @@ def main():
                     navigator.manual_override_msg = "0.0,0.0,1700000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
-                        state.mode = "fixed_ball_3"  # "pause" for testing
+                        state.mode = "fixed_ball_3"  # "fixed_ball_3" for testing
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
@@ -388,19 +389,19 @@ def main():
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.mode = "fixed_bucket_3"  # "pause" for testing
@@ -411,10 +412,10 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "open"
@@ -448,19 +449,19 @@ def main():
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "close"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "close":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "raise"
-                        navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                        navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                         sleep(0.2)
 
                 elif state.arm_state == "raise":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1500000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1500000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.mode = "mid_2"  # "pause" for testing
@@ -471,10 +472,10 @@ def main():
                 # # Always reset arm state when entering pick
                 if state.arm_state == "idle":
                     state.arm_state = "lower"
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.2)
                 if state.arm_state == "lower":
-                    navigator.manual_override_msg = "0.0,0.0,1000000,1100000\n"
+                    navigator.manual_override_msg = "0.0,0.0,1080000,1100000\n"
                     sleep(0.1)
                     if navigator.goal_status == 1:
                         state.arm_state = "open"
@@ -497,8 +498,7 @@ def main():
                         state.arm_state = "idle"
                         state.targeting_active = False  # Reset
 
-
-#*******************************         MOTORS          ****************************************************
+            # *******************************         MOTORS          ****************************************************
 
             elif state.mode == "fixed_ball_1":
                 # Regular odometry driving (set string to empty)
@@ -592,14 +592,14 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for 1st bucket...")
                     navigator.set_goal(
-                        1.0, 1.0, 1000000, 1500000
+                        1.0, 1.0, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "blue bucket", 1000000, 1500000
+                    navigator, depth_frame, detections, "blue bucket", 1080000, 1500000
                 )
 
                 # 3. Robot has arrived at ball, switch modes
@@ -608,7 +608,6 @@ def main():
                     state.mode = "drop_1"
                     state.arm_state = "idle"
                     state.targeting_active = False
-
 
             elif state.mode == "fixed_ball_2":
                 # Regular odometry driving (set string to empty)
@@ -702,14 +701,14 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for 2nd bucket...")
                     navigator.set_goal(
-                        8.3, 8.7, 1000000, 1500000
+                        8.3, 8.7, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "red bucket", 1000000, 1500000
+                    navigator, depth_frame, detections, "red bucket", 1080000, 1500000
                 )
 
                 # 3. Robot has arrived at ball, switch modes
@@ -718,7 +717,6 @@ def main():
                     state.mode = "drop_2"
                     state.arm_state = "idle"
                     state.targeting_active = False
-
 
             elif state.mode == "fixed_ball_3":
                 # Regular odometry driving (set string to empty)
@@ -774,8 +772,6 @@ def main():
                     state.arm_state = "lower"
                     state.targeting_active = False
 
-
-
             elif state.mode == "fixed_bucket_3":
                 # Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = ""
@@ -814,15 +810,15 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for 3rd bucket...")
                     navigator.set_goal(
-                        1.0, 8.3, 1000000, 1500000
+                        1.0, 8.3, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "yellow bucket", 1000000, 1500000
-                ) #UNLABELED
+                    navigator, depth_frame, detections, "", 1080000, 1500000
+                )  # UNLABELED
 
                 # 3. Robot has arrived at ball, switch modes
                 if navigator.is_goal_reached:
@@ -830,7 +826,6 @@ def main():
                     state.mode = "drop_3"
                     state.arm_state = "idle"
                     state.targeting_active = False
-
 
             elif state.mode == "fixed_ball_4":
                 # Regular odometry driving (set string to empty)
@@ -924,14 +919,14 @@ def main():
                 if not state.targeting_active:
                     print("Setting waypoint for 4th bucket...")
                     navigator.set_goal(
-                        8.3, 1.0, 1000000, 1500000
+                        8.3, 2.0, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "green bucket", 1000000, 1500000
+                    navigator, depth_frame, detections, "green bucket", 1080000, 1500000
                 )
 
                 # 3. Robot has arrived at ball, switch modes
@@ -941,8 +936,7 @@ def main():
                     state.arm_state = "idle"
                     state.targeting_active = False
 
-
-#*******************************         MIDPOINTS          ****************************************************
+            # *******************************         MIDPOINTS          ****************************************************
 
             elif state.mode == "mid_1":
                 # Regular odometry driving (set string to empty)
@@ -981,7 +975,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting mid waypoint...")
                     navigator.set_goal(
-                        6.0, 3.3, 1700000, 1500000
+                        7.0, 5.0, 1700000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
@@ -997,14 +991,12 @@ def main():
                     state.mode = "fixed_ball_2"
                     state.targeting_active = False
 
-
             elif state.mode == "mid_2":
                 # Regular odometry driving (set string to empty)
                 navigator.manual_override_msg = ""
                 # 2. Infer
                 engine.infer_frame(img_color)
                 detections = engine.get_latest_result()
-
                 # ************************************************************************
                 # Display obj detection in real time
                 for label, conf, bbox in detections:
@@ -1035,14 +1027,14 @@ def main():
                 if not state.targeting_active:
                     print("Setting mid way point...")
                     navigator.set_goal(
-                        3.7, 4.3, 1700000, 1500000
+                        3.0, 3.7, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "red ball", 1700000, 1500000
+                    navigator, depth_frame, detections, "red ball", 1080000, 1500000
                 )
 
                 # 3. Robot has arrived at ball, switch modes
@@ -1050,7 +1042,6 @@ def main():
                     print("Arrived at midpoint location. Switching to 4th ball search.")
                     state.mode = "fixed_bucket_4"
                     state.targeting_active = False
-
 
             # ------------------------------------------------------------------------------
             # Show the frame
