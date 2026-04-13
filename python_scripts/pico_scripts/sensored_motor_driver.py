@@ -15,7 +15,7 @@ class SensoredMotorDriver(MotorDriver):
         self.AB = ab  # encoder channel order, 1: A rise first, -1: B rise first
         self.PPR = 16  # pulses per revolution, PPR * 4 = CPR
         self.GEAR_RATIO = 102.08  # speed reduction rate, v_wheel = v_motor / GEAR_RATIO
-        self.WHEEL_RADIUS = 75 / 2000  # diameter in mm -> radius in m  
+        self.WHEEL_RADIUS = 0.075  # diameter in mm -> radius in m  
     
     def update_counts(self, pin):
         if self.encb_pin.value() == self.enca_pin.value():  # A channel RISE later than B channel

@@ -37,7 +37,7 @@ def app_callback(pad, info, user_data):
     # Using the user_data to count the number of frames
     user_data.increment()
     string_to_print = f"Frame count: {user_data.get_count()}\n"
-    msg = "0.0, 0.0\n".encode('utf-8')
+    msg = "0.2, 0.0\n".encode('utf-8')
 
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
@@ -49,26 +49,26 @@ def app_callback(pad, info, user_data):
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-        if "ball" in label:
-            # Get track ID
-            track_id = 0
-            track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
-            if len(track) == 1:
-                track_id = track[0].get_id()
-            # string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
-            string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
-            if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
-                msg = "0.4, 1.0\n".encode('utf-8')
-            elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
-                msg = "0.4, -1.0\n".encode('utf-8')
-            else:
-                msg = "0.4, 0.0\n".encode('utf-8')
+        # if "ball" in label:
+        #     # Get track ID
+        #     track_id = 0
+        #     track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
+        #     if len(track) == 1:
+        #         track_id = track[0].get_id()
+        #     # string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
+        #     string_to_print += (f"X Center: {(bbox.xmin() + bbox.xmax()) / 2}, Y Center: {(bbox.ymin() + bbox.ymax()) / 2}\n")
+        #     if (bbox.xmin() + bbox.xmax()) / 2 < 0.3:
+        #         msg = "0.4, 1.0\n".encode('utf-8')
+        #     elif (bbox.xmin() + bbox.xmax()) / 2 > 0.7:
+        #         msg = "0.4, -1.0\n".encode('utf-8')
+        #     else:
+        #         msg = "0.4, 0.0\n".encode('utf-8')
 
-            detection_count += 1
+        detection_count += 1
 
     string_to_print += (f"Target velocity: {msg}")
     user_data.messenger.write(msg)
-    print(string_to_print)
+    #print(string_to_print)
     return Gst.PadProbeReturn.OK
 
 if __name__ == "__main__":

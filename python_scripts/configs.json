@@ -1,0 +1,19 @@
+{
+    "lin_vel_axis": 1,
+    "ang_vel_axis": 3,
+    "max_lin_vel": 0.3,
+    "max_ang_vel": 0.5,
+    "stop_btn": 8,
+    "pause_btn": 9,
+    "record_btn": 0,
+    "label_switch_btn": 1,
+    "preview_btn": 2,
+    "arm_lift_btn": 6,
+    "arm_lower_btn": 4,
+    "claw_open_btn": 7,
+    "claw_close_btn": 5,
+    "arm_speed": 3000,
+    "claw_speed": 3000,
+    "frame_rate": 10,
+    "record_cap": 100000
+}

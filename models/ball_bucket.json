@@ -3,9 +3,9 @@
     "detection_threshold": 0.5,
     "max_boxes":200,
     "labels": [
-      "blue bucket",
-      "blue ball",
       "yellow bucket",
+      "blue ball",
+      "blue bucket",
       "green ball",
       "green bucket",
       "red ball",

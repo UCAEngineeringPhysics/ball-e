@@ -42,7 +42,7 @@ while True:
         meas_lin_vel, meas_ang_vel = ddc.get_vels()
         shoulder_duty = arm.shoulder_duty
         claw_duty = arm.claw_duty
-        out_msg = f"{meas_lin_vel}, {meas_ang_vel}\n"
+        out_msg = f"{meas_lin_vel}, {meas_ang_vel}, {shoulder_duty}, {claw_duty}\n"
         #         out_msg = "PICO\n"
         sys.stdout.write(out_msg)
         tic = ticks_us()
