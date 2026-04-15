@@ -92,9 +92,9 @@ def process_targeting(
                 #     f"Object {label} at X:{coords_cam[0]:.2f}m, Y:{coords_cam[1]:.2f}m, Z:{coords_cam[2]:.2f}m"
                 # )  # debug
                 if "ball" in target_label:
-                    dist_offset = -0.575
+                    dist_offset = -0.61
                 else:
-                    dist_offset = -0.445
+                    dist_offset = -0.47
                 goal_coords = transform_cam_to_odom(
                     (coords_cam[0], coords_cam[1], coords_cam[2]),
                     (navigator.x, navigator.y, navigator.theta),
@@ -975,14 +975,15 @@ def main():
                 if not state.targeting_active:
                     print("Setting mid waypoint...")
                     navigator.set_goal(
-                        7.0, 5.0, 1700000, 1500000
+                        7.0, 2.5, 1700000, 1500000
+                        
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)
 
                 # # 2. Use obj detection (for *ball* specifically) to improve/update way point
                 process_targeting(
-                    navigator, depth_frame, detections, "blue ball", 1700000, 1500000
+                    navigator, depth_frame, detections, "eric", 1700000, 1500000
                 )
 
                 # 3. Robot has arrived at ball, switch modes
@@ -1027,7 +1028,7 @@ def main():
                 if not state.targeting_active:
                     print("Setting mid way point...")
                     navigator.set_goal(
-                        3.0, 3.7, 1080000, 1500000
+                        5.0, 5.5, 1080000, 1500000
                     )  # Coordinates for first way point
                     state.targeting_active = True
                     # sleep(0.1)

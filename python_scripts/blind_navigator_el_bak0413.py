@@ -1,7 +1,7 @@
 import threading
 from time import time, sleep
 from serial import Serial
-from math import sin, cos, atan2, hypot, pi
+from math import sin, cos, atan2, hypot
 
 
 class BlindNavigator:
@@ -21,14 +21,12 @@ class BlindNavigator:
         self.goal_y = 0.0
         self.targ_lin_vel = 0.0
         self.targ_ang_vel = 0.0
-        # *****
+        #*****
         self.claw_pw = 0.0
         self.shoa_pw = 0.0
         self.goal_status = 0.0
-        # *****
-        self.motion_data = {
-            key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]
-        }
+        #*****
+        self.motion_data = {key: 0.0 for key in ["meas_lin_vel", "fuse_ang_vel", "goal_met"]}
         self.last_ts = time()  # time stamp in s
         self.pico_thread = threading.Thread(target=self.process_pico_msgs, daemon=True)
         self.pico_thread.start()
@@ -55,6 +53,7 @@ class BlindNavigator:
                     # Idle
                     msg_to_pico = "0.0,0.0,1800000,1500000\n"
 
+         
                 self.pico_msngr.write(msg_to_pico.encode("utf-8"))
 
                 # Update odometry
@@ -65,10 +64,10 @@ class BlindNavigator:
                     sin(self.theta), cos(self.theta)
                 )  # restrict theta between -pi and pi
                 last_ts = curr_ts
-                # *****
+                #*****
                 self.goal_status = self.motion_data["goal_met"]
-                # *****
-
+                #*****
+    
             # Receive motion data from Pico
             if self.pico_msngr.inWaiting() > 0:
                 msg_from_pico = (
@@ -92,7 +91,7 @@ class BlindNavigator:
         self,
         kp_v=0.5,
         kp_w=0.5,
-        max_v=0.4,
+        max_v=0.3,
         max_w=0.6,
         distance_tolerance=0.05,
     ):
@@ -102,6 +101,7 @@ class BlindNavigator:
         """
         dx = self.goal_x - self.x
         dy = self.goal_y - self.y
+
 
         distance_error = hypot(dx, dy)
         if distance_error < distance_tolerance:
@@ -113,24 +113,24 @@ class BlindNavigator:
             target_heading = atan2(dy, dx)
             heading_error = target_heading - self.theta
             heading_error = atan2(sin(heading_error), cos(heading_error))
-            if abs(heading_error) > pi / 18:
-                cmd_v = 0.0
-            else:
-                cmd_v = kp_v * distance_error
-
             cmd_w = kp_w * heading_error
             # direction_alignment = max(
             #     0.0, cos(heading_error)
             # )  # slow down if heading too off
             # cmd_v = kp_v * distance_error * direction_alignment
+            direction_alignment = max(-1, min(cos(heading_error), 1))
+            cmd_v = kp_v * distance_error * abs(direction_alignment)
 
             self.targ_lin_vel = max(min(cmd_v, max_v), -max_v)
             self.targ_ang_vel = max(min(cmd_w, max_w), -max_w)
 
-    def set_goal(self, goal_x, goal_y, claw_pw, shoa_pw):
+ 
+    
+
+    def set_goal(self, goal_x, goal_y,claw_pw,shoa_pw):
         self.goal_x = goal_x
         self.goal_y = goal_y
-        # *****
+        #*****
         self.claw_pw = claw_pw
         self.shoa_pw = shoa_pw
 
@@ -139,45 +139,33 @@ class BlindNavigator:
 
 if __name__ == "__main__":
     navigator = BlindNavigator()
-    navigator.set_goal(1.4, 0.0, 1700000, 1500000)
+    navigator.set_goal(1.4, 0.0)
     while not navigator.is_goal_reached:
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
     print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    navigator.set_goal(0.0, 0.0, 1700000, 1500000)
+    navigator.set_goal(1.4, 5.0)
     while not navigator.is_goal_reached:
         print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
         sleep(0.1)
-
-    # navigator.set_goal(1.4, 0.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    # navigator.set_goal(1.4, 5.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    # navigator.set_goal(4.5, 5.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    # navigator.set_goal(1.4, 5.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    # navigator.set_goal(1.5, 0.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    # navigator.set_goal(0.0, 0.0)
-    # while not navigator.is_goal_reached:
-    #     print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
-    #     sleep(0.1)
-    # print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
-    #
-
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+    navigator.set_goal(4.5, 5.0)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
+        sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+    navigator.set_goal(1.4, 5.0)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
+        sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+    navigator.set_goal(1.5, 0.0)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
+        sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")
+    navigator.set_goal(0.0, 0.0)
+    while not navigator.is_goal_reached:
+        print(f"[{time()}]: x={navigator.x}, y ={navigator.y}, theta={navigator.theta}")
+        sleep(0.1)
+    print(f"Goal x={navigator.goal_x}, y={navigator.goal_y} reached.")

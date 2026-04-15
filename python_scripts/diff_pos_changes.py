@@ -23,6 +23,60 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GLib
 
 
+# ---------------------------------------------------------
+# EDITABLE COURSE LAYOUT
+# ---------------------------------------------------------
+# Keep this sequence to control pick/drop order.
+TARGET_SEQUENCE = ["blue", "red", "yellow", "green"]
+
+# Randomized ball positions (inside the hoop area).
+# Update only the (x, y) tuple to retune.
+BALL_POSITIONS = {
+        "blue": (4.25, 3.5),
+        "red": (5.55, 3.5),
+        "yellow": (5.55, 4.8),
+        "green": (4.25, 4.8),
+}
+
+# Randomized bucket positions (must stay on course corners).
+# Update only the (x, y) tuple to retune.
+BUCKET_POSITIONS = {
+    "blue": (1.25, 0.5),   # top-left
+    "red": (8.55, 8.2),    # bottom-right
+    "yellow": (1.25, 7.8), # top-right
+    "green": (8.55, 0.5),  # bottom-left
+}
+
+# Keep detection disabled for labels that are currently unreliable.
+DISABLE_BUCKET_DETECTION_FOR = {"yellow"}
+
+# Optional midpoint detours keyed by target color.
+# pre_ball_midpoints: before searching for that color's ball
+# pre_bucket_midpoints: after picking that color's ball, before navigating to its bucket
+PRE_BALL_MIDPOINTS_BY_COLOR = {
+    "red": {
+        "waypoint": (7.65, 3.0),
+        "target_label": "blue ball",
+        "claw_pw": 1700000,
+        "shoa_pw": 1500000,
+        "focus_type": "ball",
+        "start_msg": "Setting mid waypoint...",
+        "arrival_msg": "Arrived at midpoint location. Switching to next ball search.",
+    }
+}
+PRE_BUCKET_MIDPOINTS_BY_COLOR = {
+    "green": {
+        "waypoint": (3.25, 3.2),
+        "target_label": "red ball",
+        "claw_pw": 1080000,
+        "shoa_pw": 1500000,
+        "focus_type": "ball",
+        "start_msg": "Setting mid way point...",
+        "arrival_msg": "Arrived at midpoint location. Switching to bucket search.",
+    }
+}
+
+
 def transform_cam_to_odom(coords_cam, robot_pose, dist_offset=-0.605):
     """
     Transforms a 3D point from the camera frame to the odom frame.
@@ -307,48 +361,26 @@ def main():
     engine = HailoRemoteInference(args.hef_path, args.labels_json)
     engine.start()
 
-    # Target order is now data-driven instead of hardcoded numbered states.
-    targets = ["blue", "red", "yellow", "green"]
-    ball_waypoints = [
-        (4.0, 0.0),
-        (5.3, 4.0),
-        (5.3, 5.3),
-        (4.0, 5.3),
-    ]
-    bucket_waypoints = [
-        (0.0, 0.0),
-        (8.3, 8.7),
-        (1.0, 8.3),
-        (8.3, 2.0),
-    ]
+    # Build route data from editable layout constants.
+    targets = TARGET_SEQUENCE
+    ball_waypoints = [BALL_POSITIONS[target] for target in targets]
+    bucket_waypoints = [BUCKET_POSITIONS[target] for target in targets]
     ball_labels = [f"{target} ball" for target in targets]
     bucket_labels = [f"{target} bucket" for target in targets]
-    if "yellow" in targets:
-        # Keep existing behavior for the yellow bucket detection issue.
-        bucket_labels[targets.index("yellow")] = ""
+    for color in DISABLE_BUCKET_DETECTION_FOR:
+        if color in targets:
+            bucket_labels[targets.index(color)] = ""
 
-    # Optional midpoint detours by target index.
+    # Optional midpoint detours by target index, derived from color keys.
     pre_ball_midpoints = {
-        1: {
-            "waypoint": (7.0, 5.0),
-            "target_label": "blue ball",
-            "claw_pw": 1700000,
-            "shoa_pw": 1500000,
-            "focus_type": "ball",
-            "start_msg": "Setting mid waypoint...",
-            "arrival_msg": "Arrived at midpoint location. Switching to next ball search.",
-        }
+        targets.index(color): cfg
+        for color, cfg in PRE_BALL_MIDPOINTS_BY_COLOR.items()
+        if color in targets
     }
     pre_bucket_midpoints = {
-        3: {
-            "waypoint": (3.0, 3.7),
-            "target_label": "red ball",
-            "claw_pw": 1080000,
-            "shoa_pw": 1500000,
-            "focus_type": "ball",
-            "start_msg": "Setting mid way point...",
-            "arrival_msg": "Arrived at midpoint location. Switching to bucket search.",
-        }
+        targets.index(color): cfg
+        for color, cfg in PRE_BUCKET_MIDPOINTS_BY_COLOR.items()
+        if color in targets
     }
 
     # Create a state object with generic modes.
@@ -400,12 +432,6 @@ def main():
                 if run_pick_sequence(navigator, state):
                     state.arm_state = "idle"
                     state.targeting_active = False
-                    navigator.backup_for(
-                        duration_s=0.35,
-                        speed_mps=0.10,
-                        claw_pw=1080000,
-                        shoa_pw=1500000,
-                    )
                     if state.target_index in pre_bucket_midpoints:
                         state.mode = "NAV_MIDPOINT"
                         state.midpoint_cfg = pre_bucket_midpoints[state.target_index]
