@@ -1,0 +1,65 @@
+You need to start the Flask application from your terminal. 
+Make sure you are in the directory where your app.py lives.
+
+~/vosk_realtime_transcription
+source venv/bin/activate
+
+Run the application:
+
+python app.py
+
+You should see terminal output saying the Vosk model loaded 
+successfully and the server is starting on https://0.0.0.0:5000. 
+Leave this terminal window open.
+
+Grab your phone or open a web browser on your computer 
+(it must be connected to the same Wi-Fi network as your Raspberry Pi).
+
+Navigate to your Raspberry Pi's IP address on port 5000 using HTTPS. 
+It will look something like this:
+https://192.168.1.100:5000 (Replace with your Pi's actual IP address).
+
+Accept the Security Warning: 
+Because you generated your own SSL certificates, 
+your browser will flag it as "Not Secure." 
+Click Advanced and then Proceed to [IP address] 
+(this is completely safe for local development).
+
+When the page loads, your browser will ask for microphone permissions.
+Click Allow
+
+
+If your web interface has a Start or Record button, 
+press it to open the WebSocket connection.
+
+Speak your trigger phrase clearly into your device's microphone:
+"start"
+
+The web interface should transcribe your words on the screen as you speak.
+
+As soon as the phrase is recognized and finalized on your screen, look at the terminal window where your app.py is running.
+
+You should instantly see this message pop up:
+[SYSTEM] Voice command recognized! Executing script...
+
+Right after that, your Raspberry Pi will execute 
+your terminal commands in the background—it will load your 
+Hailo AI environment and launch odom_course.py. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

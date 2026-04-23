@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Transcription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #startButton {
+            background: #4CAF50;
+            color: white;
+        }
+
+        #stopButton {
+            background: #f44336;
+            color: white;
+        }
+
+        #status {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #666;
+        }
+
+        #transcript {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 150px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Transcription</h1>
+    
+    <div class="controls">
+        <button id="startButton">Start</button>
+        <button id="stopButton" disabled>Stop</button>
+    </div>
+    
+    <div id="status">Ready</div>
+    
+    <div id="transcript">Transcribed text will appear here...</div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const statusDiv = document.getElementById('status');
+        const transcriptDiv = document.getElementById('transcript');
+        
+        let ws;
+        let audioContext;
+        let source;
+        let processor;
+        let finalTranscript = '';
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/audio`;
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                statusDiv.textContent = 'Ready';
+                startButton.disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'partial') {
+                    transcriptDiv.textContent = finalTranscript + data.text;
+                } else if (data.type === 'final') {
+                    finalTranscript += data.text + ' ';
+                    transcriptDiv.textContent = finalTranscript;
+                }
+            };
+
+            ws.onclose = () => {
+                statusDiv.textContent = 'Disconnected';
+                startButton.disabled = true;
+                stopButton.disabled = true;
+                cleanup();
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket Error:', error);
+                statusDiv.textContent = 'Connection Error';
+                startButton.disabled = true;
+                stopButton.disabled = true;
+            };
+        }
+
+        // Convert audio to 16-bit PCM
+        function floatTo16BitPCM(float32Array) {
+            const buffer = new ArrayBuffer(float32Array.length * 2);
+            const view = new DataView(buffer);
+            let offset = 0;
+            for (let i = 0; i < float32Array.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, float32Array[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+            return buffer;
+        }
+
+        // Clean up audio resources
+        function cleanup() {
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+
+        // Start recording
+        async function startRecording() {
+            finalTranscript = '';
+            transcriptDiv.textContent = 'Listening...';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                source = audioContext.createMediaStreamSource(stream);
+                processor = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                processor.onaudioprocess = (e) => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        const float32Array = e.inputBuffer.getChannelData(0);
+                        const int16Array = floatTo16BitPCM(float32Array);
+                        ws.send(int16Array);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('start');
+                    statusDiv.textContent = 'Recording...';
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                }
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                statusDiv.textContent = `Error: ${err.message}`;
+            }
+        }
+
+        // Stop recording
+        function stopRecording() {
+            cleanup();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('stop');
+            }
+            statusDiv.textContent = 'Ready';
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+
+        // Initialize
+        startButton.disabled = true;
+        connectWebSocket();
+    </script>
+</body>
+</html>
